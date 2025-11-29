@@ -13,16 +13,20 @@
     DISK_ARGS="${DISK_ARGS} --disk path=/vmfs/rhcsa_storage/{{ vm_name }}_{{ loop.index }}.qcow2,size={{ disk.size }},pool=rhcsa_storage"
     {% endfor %}
     
+    # Use inst.ip to enforce static IP during installation, which resolves DHCP fallback.
+    # Format: ip=<ip>::<gateway>:<netmask>::<interface>:none
+    VARS_EXTRA_ARGS="inst.ip={{ vm_ip }}::192.168.1.1:255.255.255.0::eth0:none"
+
     virt-install \
       --name {{ vm_name }} \
-      --ram {{ vm_ram }} \
+      --ram 8192 \
       --vcpus 2 \
       ${DISK_ARGS} \
       --os-variant {{ vm_os_variant }} \
       --location {{ vm_location_url }} \
       --initrd-inject "/vmfs/rhcsa_storage/{{ vm_name }}_kickstart.ks" \
-      --extra-args "ks=file:/{{ vm_name }}_kickstart.ks console=tty0 console=ttyS0,115200n8" \
-      --network bridge=virbr0,model=virtio \
+      --extra-args "ks=file:/{{ vm_name }}_kickstart.ks console=tty0 console=ttyS0,115200n8 ${VARS_EXTRA_ARGS}" \
+      --network bridge=NetBridge,model=virtio \
       --noautoconsole --wait 0
   args:
     creates: "/vmfs/rhcsa_storage/{{ vm_name }}_1.qcow2"

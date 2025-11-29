@@ -36,9 +36,19 @@
 
 - name: Define and start rhcsa_storage pool in Libvirt (using /vmfs)
   community.libvirt.virt_pool:
-    name: rhcsa_storage
     state: active
     autostart: yes
-    # REVERTED to path/type, requires community.libvirt >= 2.0.0
-    type: dir
-    path: /vmfs/rhcsa_storage
+    name: rhcsa_storage
+    uri: qemu:///system
+    xml: |
+      <pool type='dir'>
+        <name>rhcsa_storage</name>
+        <target>
+          <path>/vmfs/rhcsa_storage</path>
+        </target>
+      </pool>
+
+- name: Start pool
+  community.libvirt.virt_pool:
+    state: active
+    name: rhcsa_storage

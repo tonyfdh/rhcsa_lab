@@ -5,7 +5,7 @@ timezone Etc/UTC
 text
 # Installation source points to the local repository VM
 url --url="{{ vm_location_url }}" 
-repo --name="AppStream" --baseurl="http://{{ hostvars['rhcsa_repo']['ansible_host'] }}/centos9stream/AppStream"
+repo --name="AppStream" --baseurl="http://{{ hostvars['repo']['ansible_host'] }}/centos9stream/AppStream"
 
 # Static IP configuration for the VM
 network --bootproto=static --ip={{ vm_ip }} --netmask=255.255.255.0 --gateway=192.168.1.1 --device=link --nameserver=8.8.8.8 --hostname={{ vm_name }}

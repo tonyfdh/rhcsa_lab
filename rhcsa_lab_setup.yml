@@ -8,31 +8,31 @@
   roles:
     - vm_host_setup_only
     
-- name: 2. Build rhcsa_repo VM
+- name: 2. Build repo VM
   collections:
     - community.general
   hosts: vm_host
   become: yes
   tasks:
-    - name: Call vm_builder role for rhcsa_repo
+    - name: Call vm_builder role for repo
       ansible.builtin.include_role:
         name: vm_builder
       vars:
-        vm_name: rhcsa_repo
-        vm_ip: "{{ hostvars['rhcsa_repo']['ansible_host'] }}"
+        vm_name: repo
+        vm_ip: "{{ hostvars['repo']['ansible_host'] }}"
         vm_os_variant: centos-stream9
         vm_kickstart_template_name: repo_kickstart.ks.j2
         vm_location_url: "http://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os/"
         vm_ram: 8192 # 8 GB RAM
         vm_disks:
-          - path: /vmfs/rhcsa_storage/rhcsa_repo_1.qcow2
+          - path: /vmfs/rhcsa_storage/repo_1.qcow2
             size: 30
 
-- name: 3. Configure and Mirror Content on rhcsa_repo VM
+- name: 3. Configure and Mirror Content on repo VM
   collections:
     - ansible.posix
     - community.general
-  hosts: rhcsa_repo
+  hosts: repo
   gather_facts: no
   become: yes
   roles:
@@ -52,7 +52,7 @@
         vm_ip: "{{ hostvars['vm1']['ansible_host'] }}"
         vm_os_variant: centos-stream9
         vm_kickstart_template_name: vm_kickstart.ks.j2
-        vm_location_url: "http://{{ hostvars['rhcsa_repo']['ansible_host'] }}/centos9stream/BaseOS"
+        vm_location_url: "http://{{ hostvars['repo']['ansible_host'] }}/centos9stream/BaseOS"
         vm_ram: 8192 # 8 GB RAM
         vm_disks:
           - path: /vmfs/rhcsa_storage/vm1_root.qcow2
@@ -70,7 +70,7 @@
         vm_ip: "{{ hostvars['vm2']['ansible_host'] }}"
         vm_os_variant: centos-stream9
         vm_kickstart_template_name: vm_kickstart.ks.j2
-        vm_location_url: "http://{{ hostvars['rhcsa_repo']['ansible_host'] }}/centos9stream/BaseOS"
+        vm_location_url: "http://{{ hostvars['repo']['ansible_host'] }}/centos9stream/BaseOS"
         vm_ram: 8192 # 8 GB RAM
         vm_disks:
           - path: /vmfs/rhcsa_storage/vm2_root.qcow2

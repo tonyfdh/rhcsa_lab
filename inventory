@@ -6,7 +6,7 @@ localhost ansible_connection=local
 [rhcsa_repo]
 # The repository VM runs HTTPD and hosts the CentOS Stream 9 mirror.
 # REPLACE <REPO_VM_IP> with a static IP for the repository VM.
-rhcsa_repo ansible_host=<REPO_VM_IP>
+repo ansible_host=<REPO_VM_IP>
 
 [rhcsa_vms]
 # These are the two exam practice VMs.

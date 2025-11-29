@@ -22,9 +22,8 @@
         vm_ip: "{{ hostvars['repo']['ansible_host'] }}"
         vm_os_variant: centos-stream9
         vm_kickstart_template_name: repo_kickstart.ks.j2
-        # FIX: Changed --location to --cdrom and updated kernel args for Anaconda stability
-        vm_cdrom_path: "/vmfs/rhcsa_storage/CentOS-Stream-9-latest-x86_64-dvd1.iso"
-        vm_location_url: "inst.repo=hd:sr0:/" # Anaconda installs from first CDROM device
+        # FIX: Reverting to standard network location (public mirror)
+        vm_location_url: "http://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os/"
         vm_ram: 8192
         vm_disks:
           - path: /vmfs/rhcsa_storage/repo_1.qcow2
@@ -55,7 +54,6 @@
         vm_os_variant: centos-stream9
         vm_kickstart_template_name: vm_kickstart.ks.j2
         vm_location_url: "http://{{ hostvars['repo']['ansible_host'] }}/centos9stream/BaseOS"
-        vm_cdrom_path: "" # No CDROM needed for exam VMs
         vm_ram: 8192
         vm_disks:
           - path: /vmfs/rhcsa_storage/vm1_root.qcow2
@@ -74,7 +72,6 @@
         vm_os_variant: centos-stream9
         vm_kickstart_template_name: vm_kickstart.ks.j2
         vm_location_url: "http://{{ hostvars['repo']['ansible_host'] }}/centos9stream/BaseOS"
-        vm_cdrom_path: "" # No CDROM needed for exam VMs
         vm_ram: 8192
         vm_disks:
           - path: /vmfs/rhcsa_storage/vm2_root.qcow2

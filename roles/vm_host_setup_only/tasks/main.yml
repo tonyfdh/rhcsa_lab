@@ -52,10 +52,3 @@
     state: active
     name: rhcsa_storage
     autostart: yes
-
-# --- Download Local Installation ISO ---
-- name: Download CentOS Stream 9 Everything ISO to /vmfs/rhcsa_storage (7.7 GB)
-  ansible.builtin.get_url:
-    url: "https://mirrors.centos.org/mirrorlist?path=/9-stream/BaseOS/x86_64/iso/CentOS-Stream-9-latest-x86_64-dvd1.iso&redirect=1&protocol=https"
-    dest: /vmfs/rhcsa_storage/CentOS-Stream-9-latest-x86_64-dvd1.iso
-    mode: '0644'

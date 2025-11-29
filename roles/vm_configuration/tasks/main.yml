@@ -1,0 +1,78 @@
+---
+- name: 👤 Ensure key exam user and group exist (Both VMs)
+  ansible.builtin.user:
+    name: examuser
+    password: "$6$salt$xxxxxxxxxx$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Placeholder hash for 'examuserpass'
+    state: present
+    groups:
+      - wheel
+      - examgroup
+
+- name: 👥 Create 'examgroup'
+  ansible.builtin.group:
+    name: examgroup
+    state: present
+
+- name: 🔒 Configure privileged access for examuser (using sudo)
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers.d/examuser
+    line: "examuser ALL=(ALL) NOPASSWD: ALL"
+    create: yes
+    mode: '0440'
+
+- name: 🕒 Ensure chronyd is running for time synchronization objective (Both VMs)
+  ansible.builtin.systemd:
+    name: chronyd
+    state: started
+    enabled: yes
+
+- name: 🛡️ Configure firewall to allow SSH permanently (Both VMs)
+  ansible.posix.firewalld:
+    service: ssh
+    permanent: yes
+    state: enabled
+    immediate: yes
+  
+# --- VM1 SPECIFIC OBJECTIVES (Storage, Security, NFS) ---
+- name: 📁 Configure NFS mount point and autofs base directory (VM1 Only)
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /mnt/nfs_share
+    - /mnt/autofs_data
+  when: inventory_hostname == 'vm1'
+
+- name: 💾 Initialize the extra disk (/dev/vdb) for LVM/Partitioning (VM1 Only)
+  community.general.parted:
+    device: /dev/vdb
+    label: gpt
+  when: inventory_hostname == 'vm1'
+
+- name: 🔐 Set SELinux to permissive mode for initial objective (VM1 Only)
+  ansible.posix.selinux:
+    state: permissive
+    policy: targeted
+  when: inventory_hostname == 'vm1'
+
+# --- VM2 SPECIFIC OBJECTIVES (Boot, Scheduling, Networking) ---
+- name: 📝 Create file to test bootloader modification (VM2 Only)
+  ansible.builtin.copy:
+    content: |
+      # This file is used to test boot parameters.
+      # Search for this line after modifying the bootloader configuration.
+      LAB_BOOT_MODIFICATION_TEST
+    dest: /boot/grub2/user_test_file.txt
+    mode: '0644'
+  when: inventory_hostname == 'vm2'
+
+- name: 📅 Configure sample cron job for scheduling objective (VM2 Only)
+  ansible.builtin.cron:
+    name: "daily_system_check"
+    weekday: "1-5"
+    hour: "3"
+    minute: "0"
+    job: "/usr/bin/logger 'CRON check executed by Ansible'"
+    user: root
+  when: inventory_hostname == 'vm2'

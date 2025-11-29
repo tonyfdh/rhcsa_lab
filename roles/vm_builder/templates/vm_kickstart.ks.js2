@@ -1,0 +1,50 @@
+install
+lang en_US.UTF-8
+keyboard us
+timezone Etc/UTC
+text
+# Installation source points to the local repository VM
+url --url="{{ vm_location_url }}" 
+repo --name="AppStream" --baseurl="http://{{ hostvars['rhcsa_repo']['ansible_host'] }}/centos9stream/AppStream"
+
+# Static IP configuration for the exam VM
+network --bootproto=static --ip={{ vm_ip }} --netmask=255.255.255.0 --gateway=192.168.1.1 --device=eth0 --nameserver={{ hostvars['rhcsa_repo']['ansible_host'] }} --hostname={{ vm_name }}
+
+rootpw --plaintext examroot
+auth --enableshadow --passalgo=sha512
+selinux --enforcing
+firewall --enabled --ssh
+
+# Standard exam user
+user --name=student --password=studentpass --plaintext --groups=wheel
+
+bootloader --location=mbr
+
+# Partitioning for exam preparation
+clearpart --all --initlabel
+part / --fstype="xfs" --size=7168 # ~7GB root
+part swap --size=2048
+part /boot --fstype="xfs" --size=1024
+# Remaining space is left free for partitioning/LVM objectives
+
+%packages
+@^minimal-environment
+@guest-agents
+vim
+net-tools
+nfs-utils
+vfat-utils
+parted
+lsscsi
+tar
+gzip
+bzip2
+cronie
+at
+firewalld
+%end
+
+%post
+echo "student ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/student
+chmod 0440 /etc/sudoers.d/student
+%end

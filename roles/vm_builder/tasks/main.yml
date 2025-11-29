@@ -1,0 +1,38 @@
+---
+- name: 📄 Copy Kickstart file for {{ vm_name }}
+  ansible.builtin.template:
+    src: "{{ vm_kickstart_template_name }}"
+    dest: "/var/lib/libvirt/images/{{ vm_name }}_kickstart.ks"
+    mode: '0644'
+  
+- name: 💻 Define and start {{ vm_name }} VM installation
+  ansible.builtin.shell: |
+    # Construct the disk path arguments based on the vm_disks variable
+    DISK_ARGS=""
+    {% for disk in vm_disks %}
+    DISK_ARGS="${DISK_ARGS} --disk path={{ disk.path }},size={{ disk.size }}"
+    {% endfor %}
+
+    virt-install \
+      --name {{ vm_name }} \
+      --ram 2048 \
+      --vcpus 2 \
+      ${DISK_ARGS} \
+      --os-variant {{ vm_os_variant }} \
+      --location {{ vm_location_url }} \
+      --initrd-inject "/var/lib/libvirt/images/{{ vm_name }}_kickstart.ks" \
+      --extra-args "ks=file:/{{ vm_name }}_kickstart.ks console=tty0 console=ttyS0,115200n8" \
+      --network bridge=virbr0,model=virtio \
+      --noautoconsole --wait 0
+  args:
+    creates: "{{ vm_disks[0].path }}"
+  register: vm_install_result
+  
+- name: ⏳ Wait for {{ vm_name }} SSH access before proceeding
+  ansible.builtin.wait_for:
+    port: 22
+    host: "{{ vm_ip }}"
+    timeout: 600
+    delay: 15
+  delegate_to: localhost
+  when: vm_install_result.changed

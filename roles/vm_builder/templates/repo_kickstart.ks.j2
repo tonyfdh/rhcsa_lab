@@ -1,0 +1,36 @@
+install
+lang en_US.UTF-8
+keyboard us
+timezone Etc/UTC
+text
+url --url="{{ vm_location_url }}"
+
+# Static IP configuration for the repo VM
+network --bootproto=static --ip={{ vm_ip }} --netmask=255.255.255.0 --gateway=192.168.1.1 --device=eth0 --nameserver=8.8.8.8 --hostname={{ vm_name }}
+
+rootpw --plaintext examrepo
+auth --enableshadow --passalgo=sha512
+selinux --enforcing
+firewall --enabled --ssh
+
+# User for Ansible management
+user --name=ansibleuser --password=ansiblepass --plaintext --groups=wheel
+
+bootloader --location=mbr
+clearpart --all --initlabel
+part / --fstype="xfs" --size=20480
+part swap --size=2048
+
+%packages
+@^minimal-environment
+httpd
+createrepo
+rsync
+net-tools
+vim
+%end
+
+%post
+echo "ansibleuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/ansibleuser
+chmod 0440 /etc/sudoers.d/ansibleuser
+%end

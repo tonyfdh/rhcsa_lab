@@ -1,0 +1,43 @@
+---
+- name: Create repository directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /var/www/html/centos9stream/BaseOS
+    - /var/www/html/centos9stream/AppStream
+
+- name: Mirror CentOS Stream 9 Content
+  ansible.builtin.shell: |
+    if [ -z "$(ls -A /var/www/html/centos9stream/BaseOS)" ]; then
+      echo "Starting rsync for BaseOS..."
+      rsync -av --exclude "liveos" --exclude "images" rsync://mirror.stream.centos.org/centos/9-stream/BaseOS/x86_64/os/ /var/www/html/centos9stream/BaseOS/
+      
+      echo "Starting rsync for AppStream..."
+      rsync -av --exclude "liveos" --exclude "images" rsync://mirror.stream.centos.org/centos/9-stream/AppStream/x86_64/os/ /var/www/html/centos9stream/AppStream/
+      
+      echo "Creating repository metadata..."
+      createrepo /var/www/html/centos9stream/BaseOS
+      createrepo /var/www/html/centos9stream/AppStream
+    fi
+  args:
+    executable: /bin/bash
+
+- name: Configure firewalld for HTTP access
+  ansible.posix.firewalld:
+    service: http
+    permanent: yes
+    state: enabled
+    immediate: yes
+
+- name: Ensure SELinux allows httpd to serve content
+  ansible.posix.seboolean:
+    name: httpd_can_network_connect
+    state: yes
+
+- name: Start and enable httpd
+  ansible.builtin.systemd:
+    name: httpd
+    state: started
+    enabled: yes

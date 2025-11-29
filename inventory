@@ -1,0 +1,20 @@
+[vm_host]
+# This group now represents the physical server you are running Ansible on.
+# It is configured to run tasks locally on that machine.
+localhost ansible_connection=local
+
+[rhcsa_repo]
+# The repository VM runs HTTPD and hosts the CentOS Stream 9 mirror.
+# REPLACE <REPO_VM_IP> with a static IP for the repository VM.
+rhcsa_repo ansible_host=<REPO_VM_IP>
+
+[rhcsa_vms]
+# These are the two exam practice VMs.
+# REPLACE <VM1_IP> with a static IP for VM1.
+# REPLACE <VM2_IP> with a static IP for VM2.
+vm1 ansible_host=<VM1_IP>
+vm2 ansible_host=<VM2_IP>
+
+[all_vms:children]
+rhcsa_repo
+rhcsa_vms

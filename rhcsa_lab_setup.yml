@@ -1,0 +1,71 @@
+---
+- name: 1. Setup VM Host (Install KVM/Libvirt)
+  hosts: vm_host
+  become: yes
+  roles:
+    - vm_host_setup_only
+    
+- name: 2. Build rhcsa_repo VM
+  hosts: vm_host
+  become: yes
+  tasks:
+    # Use include_role to pass specific variables for the repo VM
+    - name: Call vm_builder role for rhcsa_repo
+      ansible.builtin.include_role:
+        name: vm_builder
+      vars:
+        vm_name: rhcsa_repo
+        vm_ip: "{{ hostvars['rhcsa_repo']['ansible_host'] }}"
+        vm_os_variant: centos-stream9
+        vm_kickstart_template_name: repo_kickstart.ks.j2
+        vm_location_url: "http://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os/"
+        vm_disks:
+          - path: /var/lib/libvirt/images/rhcsa_repo.qcow2
+            size: 30
+
+- name: 3. Configure and Mirror Content on rhcsa_repo VM
+  hosts: rhcsa_repo
+  gather_facts: no # Don't try to gather facts until SSH is confirmed
+  become: yes
+  roles:
+    - repository_server_setup
+  
+- name: 4. Build Exam VMs (VM1 and VM2)
+  hosts: vm_host
+  become: yes
+  tasks:
+    # VM1 will use the local repository for installation
+    - name: Build VM1 (Exam VM 1)
+      ansible.builtin.include_role:
+        name: vm_builder
+      vars:
+        vm_name: vm1
+        vm_ip: "{{ hostvars['vm1']['ansible_host'] }}"
+        vm_os_variant: centos-stream9
+        vm_kickstart_template_name: vm_kickstart.ks.j2
+        vm_location_url: "http://{{ hostvars['rhcsa_repo']['ansible_host'] }}/centos9stream/BaseOS"
+        vm_disks:
+          - path: /var/lib/libvirt/images/vm1_root.qcow2
+            size: 10
+          - path: /var/lib/libvirt/images/vm1_extra.qcow2 # Extra disk for LVM objective
+            size: 5
+            
+    # VM2 will also use the local repository for installation
+    - name: Build VM2 (Exam VM 2)
+      ansible.builtin.include_role:
+        name: vm_builder
+      vars:
+        vm_name: vm2
+        vm_ip: "{{ hostvars['vm2']['ansible_host'] }}"
+        vm_os_variant: centos-stream9
+        vm_kickstart_template_name: vm_kickstart.ks.j2
+        vm_location_url: "http://{{ hostvars['rhcsa_repo']['ansible_host'] }}/centos9stream/BaseOS"
+        vm_disks:
+          - path: /var/lib/libvirt/images/vm2_root.qcow2
+            size: 15
+
+- name: 5. Final Configuration and RHCSA Objectives Setup on Exam VMs
+  hosts: rhcsa_vms
+  become: yes
+  roles:
+    - vm_configuration

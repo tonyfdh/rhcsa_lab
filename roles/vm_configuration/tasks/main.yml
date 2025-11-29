@@ -214,24 +214,3 @@
   ansible.builtin.debug:
     msg: "VM2 has been broken and must be fixed using the emergency mode procedure."
   when: inventory_hostname == 'vm2'
-
-# Handlers
-- name: Restart nfs-server
-  ansible.builtin.systemd:
-    name: nfs-server
-    state: restarted
-    enabled: yes
-  listen: Restart nfs-server
-
-- name: Restart NetworkManager
-  ansible.builtin.systemd:
-    name: NetworkManager
-    state: restarted
-  listen: Restart NetworkManager
-
-- name: Restart httpd
-  ansible.builtin.systemd:
-    name: httpd
-    state: restarted
-    enabled: yes
-  listen: Restart httpd

@@ -12,7 +12,7 @@
     {% for disk in vm_disks %}
     DISK_ARGS="${DISK_ARGS} --disk path=/vmfs/rhcsa_storage/{{ vm_name }}_{{ loop.index }}.qcow2,size={{ disk.size }},pool=rhcsa_storage"
     {% endfor %}
-    
+
     virt-install \
       --name {{ vm_name }} \
       --ram 8192 \
@@ -21,7 +21,7 @@
       --os-variant {{ vm_os_variant }} \
       --location {{ vm_location_url }} \
       --initrd-inject "/vmfs/rhcsa_storage/{{ vm_name }}_kickstart.ks" \
-      --extra-args "ks=file:/{{ vm_name }}_kickstart.ks console=tty0 console=ttyS0,115200n8" \
+      --extra-args "inst.ks=file:/{{ vm_name }}_kickstart.ks console=tty0 console=ttyS0,115200n8" \
       --network bridge=NetBridge,model=virtio \
       --noautoconsole --wait 0
   args:

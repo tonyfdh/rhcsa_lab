@@ -13,19 +13,6 @@
     DISK_ARGS="${DISK_ARGS} --disk path=/vmfs/rhcsa_storage/{{ vm_name }}_{{ loop.index }}.qcow2,size={{ disk.size }},pool=rhcsa_storage"
     {% endfor %}
     
-    # Determine the install source based on variables passed by the caller
-    INSTALL_SOURCE=""
-    EXTRA_ARGS_NET=""
-
-    # If vm_cdrom_path is defined (i.e., we are building the 'repo' VM), use --location file://
-    {% if vm_cdrom_path %}
-    # FIX: Use file:// protocol with location to enable --extra-args support for Kickstart
-    INSTALL_SOURCE="--location file:///{{ vm_cdrom_path | replace('/vmfs/rhcsa_storage/', '') }}"
-    EXTRA_ARGS_NET="inst.repo=hd:sr0:/"
-    {% else %}
-    INSTALL_SOURCE="--location {{ vm_location_url }}"
-    {% endif %}
-
     # Run the virt-install command
     virt-install \
       --name {{ vm_name }} \
@@ -33,9 +20,9 @@
       --vcpus 2 \
       ${DISK_ARGS} \
       --os-variant {{ vm_os_variant }} \
-      ${INSTALL_SOURCE} \
+      --location {{ vm_location_url }} \
       --initrd-inject "/vmfs/rhcsa_storage/{{ vm_name }}_kickstart.ks" \
-      --extra-args "inst.ks=file:/{{ vm_name }}_kickstart.ks console=tty0 console=ttyS0,115200n8 inst.ip={{ vm_ip }}::192.168.1.1:255.255.255.0::eth0:none ${EXTRA_ARGS_NET}" \
+      --extra-args "inst.ks=file:/{{ vm_name }}_kickstart.ks console=tty0 console=ttyS0,115200n8 inst.ip={{ vm_ip }}::192.168.1.1:255.255.255.0::eth0:none" \
       --network bridge=NetBridge,model=virtio \
       --noautoconsole --wait 0
   args:

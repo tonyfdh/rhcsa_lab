@@ -1,11 +1,16 @@
 ---
 - name: 1. Setup VM Host (Install KVM/Libvirt)
+  collections:
+    - ansible.posix
+    - community.general
   hosts: vm_host
   become: yes
   roles:
     - vm_host_setup_only
     
 - name: 2. Build rhcsa_repo VM
+  collections:
+    - community.general
   hosts: vm_host
   become: yes
   tasks:
@@ -23,6 +28,9 @@
             size: 30
 
 - name: 3. Configure and Mirror Content on rhcsa_repo VM
+  collections:
+    - ansible.posix
+    - community.general
   hosts: rhcsa_repo
   gather_facts: no
   become: yes
@@ -30,6 +38,8 @@
     - repository_server_setup
   
 - name: 4. Build Exam VMs (VM1 and VM2)
+  collections:
+    - community.general
   hosts: vm_host
   become: yes
   tasks:
@@ -64,6 +74,9 @@
             size: 15
 
 - name: 5. Final Configuration and RHCSA Objectives Setup on Exam VMs
+  collections:
+    - ansible.posix
+    - community.general
   hosts: rhcsa_vms
   become: yes
   roles:

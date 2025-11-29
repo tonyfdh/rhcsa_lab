@@ -31,6 +31,20 @@ vim
 %end
 
 %post
+# --- Network Persistence Fix (CRITICAL) ---
+# Create a static configuration file for NetworkManager in %post
+cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
+TYPE=Ethernet
+BOOTPROTO=none
+NAME=eth0
+DEVICE=eth0
+ONBOOT=yes
+IPADDR={{ vm_ip }}
+NETMASK=255.255.255.0
+GATEWAY=192.168.1.1
+DNS1=8.8.8.8
+EOF
+
 echo "ansibleuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/ansibleuser
 chmod 0440 /etc/sudoers.d/ansibleuser
 %end

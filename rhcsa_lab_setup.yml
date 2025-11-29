@@ -23,8 +23,9 @@
         vm_os_variant: centos-stream9
         vm_kickstart_template_name: repo_kickstart.ks.j2
         vm_location_url: "http://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os/"
+        vm_ram: 8192 # 8 GB RAM
         vm_disks:
-          - path: /var/lib/libvirt/images/rhcsa_repo.qcow2
+          - path: /vmfs/rhcsa_storage/rhcsa_repo_1.qcow2
             size: 30
 
 - name: 3. Configure and Mirror Content on rhcsa_repo VM
@@ -52,12 +53,13 @@
         vm_os_variant: centos-stream9
         vm_kickstart_template_name: vm_kickstart.ks.j2
         vm_location_url: "http://{{ hostvars['rhcsa_repo']['ansible_host'] }}/centos9stream/BaseOS"
+        vm_ram: 8192 # 8 GB RAM
         vm_disks:
-          - path: /var/lib/libvirt/images/vm1_root.qcow2
+          - path: /vmfs/rhcsa_storage/vm1_root.qcow2
             size: 10
-          - path: /var/lib/libvirt/images/vm1_db.qcow2
+          - path: /vmfs/rhcsa_storage/vm1_db.qcow2
             size: 5
-          - path: /var/lib/libvirt/images/vm1_swap.qcow2
+          - path: /vmfs/rhcsa_storage/vm1_swap.qcow2
             size: 1
             
     - name: Build VM2 (Exam VM 2 - Break Scenario)
@@ -69,8 +71,9 @@
         vm_os_variant: centos-stream9
         vm_kickstart_template_name: vm_kickstart.ks.j2
         vm_location_url: "http://{{ hostvars['rhcsa_repo']['ansible_host'] }}/centos9stream/BaseOS"
+        vm_ram: 8192 # 8 GB RAM
         vm_disks:
-          - path: /var/lib/libvirt/images/vm2_root.qcow2
+          - path: /vmfs/rhcsa_storage/vm2_root.qcow2
             size: 15
 
 - name: 5. Final Configuration and RHCSA Objectives Setup on Exam VMs

@@ -7,6 +7,7 @@ This Ansible project automatically provisions a self-contained lab environment s
 1. **VM Host / Control Node:** One server running CentOS Stream 9 (or similar RHEL derivative) which has:  
    * **Git** installed.  
    * The user running the playbook must have sudo privileges.  
+   * **RAM Requirements (CRITICAL):** The playbook provisions **8 GB RAM** for each of the three VMs, requiring a minimum of **24 GB free RAM** during execution. Ran into an issue where CentOS would freeze during installing at 3GB of RAM.
    * **Storage Requirement (CRITICAL):** The playbook defines a new Libvirt storage pool (rhcsa\_storage) that uses the **/vmfs** mount point. This mount point must exist and have **at least 80 GB of free space** available for all VMs and the mirrored repository content.
 
 ## **⚙️ Initial Configuration and Software Requirements**

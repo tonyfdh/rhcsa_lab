@@ -15,7 +15,7 @@
     
     virt-install \
       --name {{ vm_name }} \
-      --ram 2048 \
+      --ram {{ vm_ram }} \
       --vcpus 2 \
       ${DISK_ARGS} \
       --os-variant {{ vm_os_variant }} \

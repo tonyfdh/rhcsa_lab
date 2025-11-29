@@ -31,8 +31,32 @@ vim
 %end
 
 %post
+# Determine the primary network interface
 NIC=$(ip link show | grep -E '^[0-9]+: ' | grep -v lo | head -1 | cut -d: -f2 | tr -d ' ')
-cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$NIC
+
+# Check RHEL/Rocky version
+if grep -q "release 9" /etc/redhat-release; then
+    # RHEL 9 - use NetworkManager keyfile
+    cat << EOF > /etc/NetworkManager/system-connections/$NIC.nmconnection
+[connection]
+id=$NIC
+type=ethernet
+interface-name=$NIC
+
+[ethernet]
+
+[ipv4]
+address1={{ vm_ip }}/24,192.168.1.1
+dns=8.8.8.8;
+method=manual
+
+[ipv6]
+method=disabled
+EOF
+    chmod 600 /etc/NetworkManager/system-connections/$NIC.nmconnection
+else
+    # RHEL 8 - use ifcfg file
+    cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$NIC
 TYPE=Ethernet
 BOOTPROTO=none
 NAME=$NIC
@@ -43,7 +67,9 @@ NETMASK=255.255.255.0
 GATEWAY=192.168.1.1
 DNS1=8.8.8.8
 EOF
+fi
 
+# Ansible user sudo access
 echo "ansibleuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/ansibleuser
 chmod 0440 /etc/sudoers.d/ansibleuser
 %end

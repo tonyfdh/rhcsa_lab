@@ -7,7 +7,7 @@ text
 url --url="{{ vm_location_url }}" 
 repo --name="AppStream" --baseurl="http://{{ hostvars['rhcsa_repo']['ansible_host'] }}/centos9stream/AppStream"
 
-# Static IP configuration for the repo VM
+# Static IP configuration for the VM
 network --bootproto=static --ip={{ vm_ip }} --netmask=255.255.255.0 --gateway=192.168.1.1 --device=link --nameserver=8.8.8.8 --hostname={{ vm_name }}
 
 # VM1 Root Password: pa$$word (will be changed for VM2 later)
@@ -48,9 +48,32 @@ httpd # Install httpd on both, VM2 will configure it.
 
 %post
 # --- Network Persistence Fix (CRITICAL) ---
-# Create a static configuration file for NetworkManager in %post
+# Create a static configuration file for NetworkManager
 NIC=$(ip link show | grep -E '^[0-9]+: ' | grep -v lo | head -1 | cut -d: -f2 | tr -d ' ')
-cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$NIC
+
+# Check RHEL/Rocky version
+if grep -q "release 9" /etc/redhat-release; then
+    # RHEL 9 - use NetworkManager keyfile
+    cat << EOF > /etc/NetworkManager/system-connections/$NIC.nmconnection
+[connection]
+id=$NIC
+type=ethernet
+interface-name=$NIC
+
+[ethernet]
+
+[ipv4]
+address1={{ vm_ip }}/24,192.168.1.1
+dns=8.8.8.8;
+method=manual
+
+[ipv6]
+method=disabled
+EOF
+    chmod 600 /etc/NetworkManager/system-connections/$NIC.nmconnection
+else
+    # RHEL 8 - use ifcfg file
+    cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$NIC
 TYPE=Ethernet
 BOOTPROTO=none
 NAME=$NIC
@@ -61,6 +84,12 @@ NETMASK=255.255.255.0
 GATEWAY=192.168.1.1
 DNS1=8.8.8.8
 EOF
+fi
+
+# Ensure sys_admin has wheel/sudo access
+echo "sys_admin ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/sys_admin
+chmod 0440 /etc/sudoers.d/sys_admin
+%end
 
 # Ensure sys_admin has wheel/sudo access
 echo "sys_admin ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/sys_admin

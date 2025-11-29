@@ -15,7 +15,7 @@
     
     # Use inst.ip to enforce static IP during installation, which resolves DHCP fallback.
     # Format: ip=<ip>::<gateway>:<netmask>::<interface>:none
-    VARS_EXTRA_ARGS="inst.ip={{ vm_ip }}::192.168.1.1:255.255.255.0::eth0:none"
+    VARS_EXTRA_ARGS="inst.ip={{ vm_ip }}::192.168.1.1:255.255.255.0:{{ vm_name }}:link:none"
 
     virt-install \
       --name {{ vm_name }} \

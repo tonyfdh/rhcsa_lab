@@ -22,8 +22,8 @@
         vm_ip: "{{ hostvars['repo']['ansible_host'] }}"
         vm_os_variant: centos-stream9
         vm_kickstart_template_name: repo_kickstart.ks.j2
-        vm_location_url: "http://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os/"
-        vm_ram: 8192 # 8 GB RAM
+        vm_location_url: "/vmfs/rhcsa_storage/CentOS-Stream-9-latest-x86_64-dvd1.iso"
+        vm_ram: 8192
         vm_disks:
           - path: /vmfs/rhcsa_storage/repo_1.qcow2
             size: 30
@@ -53,7 +53,7 @@
         vm_os_variant: centos-stream9
         vm_kickstart_template_name: vm_kickstart.ks.j2
         vm_location_url: "http://{{ hostvars['repo']['ansible_host'] }}/centos9stream/BaseOS"
-        vm_ram: 8192 # 8 GB RAM
+        vm_ram: 8192
         vm_disks:
           - path: /vmfs/rhcsa_storage/vm1_root.qcow2
             size: 10
@@ -71,7 +71,7 @@
         vm_os_variant: centos-stream9
         vm_kickstart_template_name: vm_kickstart.ks.j2
         vm_location_url: "http://{{ hostvars['repo']['ansible_host'] }}/centos9stream/BaseOS"
-        vm_ram: 8192 # 8 GB RAM
+        vm_ram: 8192
         vm_disks:
           - path: /vmfs/rhcsa_storage/vm2_root.qcow2
             size: 15

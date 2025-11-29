@@ -21,7 +21,7 @@
       --os-variant {{ vm_os_variant }} \
       --location {{ vm_location_url }} \
       --initrd-inject "/vmfs/rhcsa_storage/{{ vm_name }}_kickstart.ks" \
-      --extra-args "ks=file:/{{ vm_name }}_kickstart.ks console=tty0 console=ttyS0,115200n8 ${VARS_EXTRA_ARGS}" \
+      --extra-args "ks=file:/{{ vm_name }}_kickstart.ks console=tty0 console=ttyS0,115200n8" \
       --network bridge=NetBridge,model=virtio \
       --noautoconsole --wait 0
   args:

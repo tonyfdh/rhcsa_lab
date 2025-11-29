@@ -52,8 +52,8 @@ httpd # Install httpd on both, VM2 will configure it.
 cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
 TYPE=Ethernet
 BOOTPROTO=none
-NAME=eth0
-DEVICE=eth0
+NAME=$IFACE
+DEVICE=$IFACE
 ONBOOT=yes
 IPADDR={{ vm_ip }}
 NETMASK=255.255.255.0

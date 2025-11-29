@@ -39,5 +39,11 @@
     name: rhcsa_storage
     state: active
     autostart: yes
-    type: dir
-    path: /vmfs/rhcsa_storage
+    # Use XML definition as 'path' and 'type' parameters are unsupported in this collection version
+    xml: |
+      <pool type='dir'>
+        <name>rhcsa_storage</name>
+        <target>
+          <path>/vmfs/rhcsa_storage</path>
+        </target>
+      </pool>

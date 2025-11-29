@@ -36,7 +36,7 @@
 
 - name: Define and start rhcsa_storage pool in Libvirt (using /vmfs)
   community.libvirt.virt_pool:
-    state: defined
+    state: present
     name: rhcsa_storage
     uri: qemu:///system
     xml: |

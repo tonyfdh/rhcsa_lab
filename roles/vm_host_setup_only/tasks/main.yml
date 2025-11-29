@@ -1,5 +1,5 @@
 ---
-- name: 📦 Install virtualization packages (KVM/Libvirt)
+- name: Install virtualization packages (KVM/Libvirt)
   ansible.builtin.dnf:
     name:
       - qemu-kvm
@@ -9,13 +9,13 @@
       - python3-libvirt
     state: present
 
-- name: ⚙️ Start and enable libvirtd service
+- name: Start and enable libvirtd service
   ansible.builtin.systemd:
     name: libvirtd
     state: started
     enabled: yes
 
-- name: 📁 Ensure VM images directory exists
+- name: Ensure VM images directory exists
   ansible.builtin.file:
     path: /var/lib/libvirt/images
     state: directory

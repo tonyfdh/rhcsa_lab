@@ -1,11 +1,11 @@
 ---
-- name: 📄 Copy Kickstart file for {{ vm_name }}
+- name: Copy Kickstart file for {{ vm_name }}
   ansible.builtin.template:
     src: "{{ vm_kickstart_template_name }}"
     dest: "/var/lib/libvirt/images/{{ vm_name }}_kickstart.ks"
     mode: '0644'
   
-- name: 💻 Define and start {{ vm_name }} VM installation
+- name: Define and start {{ vm_name }} VM installation
   ansible.builtin.shell: |
     # Construct the disk path arguments based on the vm_disks variable
     DISK_ARGS=""
@@ -28,7 +28,7 @@
     creates: "{{ vm_disks[0].path }}"
   register: vm_install_result
   
-- name: ⏳ Wait for {{ vm_name }} SSH access before proceeding
+- name: Wait for {{ vm_name }} SSH access before proceeding
   ansible.builtin.wait_for:
     port: 22
     host: "{{ vm_ip }}"

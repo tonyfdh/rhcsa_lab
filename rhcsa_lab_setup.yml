@@ -9,7 +9,6 @@
   hosts: vm_host
   become: yes
   tasks:
-    # Use include_role to pass specific variables for the repo VM
     - name: Call vm_builder role for rhcsa_repo
       ansible.builtin.include_role:
         name: vm_builder
@@ -25,7 +24,7 @@
 
 - name: 3. Configure and Mirror Content on rhcsa_repo VM
   hosts: rhcsa_repo
-  gather_facts: no # Don't try to gather facts until SSH is confirmed
+  gather_facts: no
   become: yes
   roles:
     - repository_server_setup
@@ -34,8 +33,7 @@
   hosts: vm_host
   become: yes
   tasks:
-    # VM1 will use the local repository for installation
-    - name: Build VM1 (Exam VM 1)
+    - name: Build VM1 (Exam VM 1 - Multi-Disk Setup)
       ansible.builtin.include_role:
         name: vm_builder
       vars:
@@ -47,11 +45,12 @@
         vm_disks:
           - path: /var/lib/libvirt/images/vm1_root.qcow2
             size: 10
-          - path: /var/lib/libvirt/images/vm1_extra.qcow2 # Extra disk for LVM objective
+          - path: /var/lib/libvirt/images/vm1_db.qcow2
             size: 5
+          - path: /var/lib/libvirt/images/vm1_swap.qcow2
+            size: 1
             
-    # VM2 will also use the local repository for installation
-    - name: Build VM2 (Exam VM 2)
+    - name: Build VM2 (Exam VM 2 - Break Scenario)
       ansible.builtin.include_role:
         name: vm_builder
       vars:

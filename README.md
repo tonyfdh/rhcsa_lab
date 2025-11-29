@@ -18,15 +18,15 @@ Before executing the main playbook, you **must** update the placeholders in the 
 
 ### 1. Update `inventory.ini`
 
-You need to define the connection details for your physical VM host, `Server2`, and the static IP addresses for the VMs.
+You need to define the connection details for your physical VM host, `Server`, and the static IP addresses for the VMs.
 
 | Placeholder | Location | Description |
 | :--- | :--- | :--- |
-| `<SERVER2_IP_ADDRESS>` | `[vm_host]` | The public or internal IP address of your physical CentOS Stream 9 server. |
-| `<SSH_USER>` | `[vm_host]` | The username you use to SSH into `Server2`. This user must have `sudo` privileges. |
-| `<REPO_VM_IP>` | `[rhcsa_repo]` | The chosen static IP for the Repository VM (e.g., `192.168.1.240`). |
-| `<VM1_IP>` | `[rhcsa_vms]` | The chosen static IP for Exam VM 1 (e.g., `192.168.1.245`). |
-| `<VM2_IP>` | `[rhcsa_vms]` | The chosen static IP for Exam VM 2 (e.g., `192.168.1.246`). |
+| `<SERVER_IP_ADDRESS>` | `[vm_host]` | The public or internal IP address of your physical CentOS Stream 9 server. |
+| `<SSH_USER>` | `[vm_host]` | The username you use to SSH into `Server`. This user must have `sudo` privileges. |
+| `<REPO_VM_IP>` | `[rhcsa_repo]` | Static IP for the Repository VM (e.g., `192.168.1.240`). |
+| `<VM1_IP>` | `[rhcsa_vms]` | Static IP for Exam VM 1 (e.g., `192.168.1.241`). |
+| `<VM2_IP>` | `[rhcsa_vms]` | Static IP for Exam VM 2 (e.g., `192.168.1.242`). |
 
 ### 2. Update `ansible.cfg`
 

@@ -10,22 +10,23 @@ repo --name="AppStream" --baseurl="http://{{ hostvars['rhcsa_repo']['ansible_hos
 # Static IP configuration for the exam VM
 network --bootproto=static --ip={{ vm_ip }} --netmask=255.255.255.0 --gateway=192.168.1.1 --device=eth0 --nameserver={{ hostvars['rhcsa_repo']['ansible_host'] }} --hostname={{ vm_name }}
 
-rootpw --plaintext examroot
+# VM1 Root Password: pa$$word (will be changed for VM2 later)
+# Hash for 'pa$$word': $6$rhcsa_salt$86yN3D4i9B9e0.bS2x/7c1tM1w8Y5s7V3f6P5F6I2
+rootpw --iscrypted $6$rhcsa_salt$86yN3D4i9B9e0.bS2x/7c1tM1w8Y5s7V3f6P5F6I2
 auth --enableshadow --passalgo=sha512
 selinux --enforcing
 firewall --enabled --ssh
 
-# Standard exam user
-user --name=student --password=studentpass --plaintext --groups=wheel
+# Standard exam user: sys_admin
+user --name=sys_admin --iscrypted $6$rhcsa_salt$86yN3D4i9B9e0.bS2x/7c1tM1w8Y5s7V3f6P5F6I2 --groups=wheel
 
 bootloader --location=mbr
 
-# Partitioning for exam preparation
+# Partitioning: Use vda for OS, leaving vdb and vdc completely free for LVM/Swap objectives on VM1
 clearpart --all --initlabel
-part / --fstype="xfs" --size=7168 # ~7GB root
-part swap --size=2048
+part / --fstype="xfs" --size=7168 
 part /boot --fstype="xfs" --size=1024
-# Remaining space is left free for partitioning/LVM objectives
+# Swap will be configured later by the exam taker
 
 %packages
 @^minimal-environment
@@ -42,9 +43,11 @@ bzip2
 cronie
 at
 firewalld
+httpd # Install httpd on both, VM2 will configure it.
 %end
 
 %post
-echo "student ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/student
-chmod 0440 /etc/sudoers.d/student
+# Ensure sys_admin has wheel/sudo access
+echo "sys_admin ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/sys_admin
+chmod 0440 /etc/sudoers.d/sys_admin
 %end

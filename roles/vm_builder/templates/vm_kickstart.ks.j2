@@ -7,8 +7,8 @@ text
 url --url="{{ vm_location_url }}" 
 repo --name="AppStream" --baseurl="http://{{ hostvars['rhcsa_repo']['ansible_host'] }}/centos9stream/AppStream"
 
-# Static IP configuration for the exam VM
-network --bootproto=static --ip={{ vm_ip }} --netmask=255.255.255.0 --gateway=192.168.1.1 --device=eth0 --nameserver={{ hostvars['rhcsa_repo']['ansible_host'] }} --hostname={{ vm_name }}
+# Static IP configuration for the repo VM
+network --bootproto=static --ip={{ vm_ip }} --netmask=255.255.255.0 --gateway=192.168.1.1 --device=link --nameserver=8.8.8.8 --hostname={{ vm_name }}
 
 # VM1 Root Password: pa$$word (will be changed for VM2 later)
 # Hash for 'pa$$word': $6$rhcsa_salt$86yN3D4i9B9e0.bS2x/7c1tM1w8Y5s7V3f6P5F6I2
@@ -49,16 +49,17 @@ httpd # Install httpd on both, VM2 will configure it.
 %post
 # --- Network Persistence Fix (CRITICAL) ---
 # Create a static configuration file for NetworkManager in %post
-cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
+NIC=$(ip link show | grep -E '^[0-9]+: ' | grep -v lo | head -1 | cut -d: -f2 | tr -d ' ')
+cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$NIC
 TYPE=Ethernet
 BOOTPROTO=none
-NAME=$IFACE
-DEVICE=$IFACE
+NAME=$NIC
+DEVICE=$NIC
 ONBOOT=yes
 IPADDR={{ vm_ip }}
 NETMASK=255.255.255.0
 GATEWAY=192.168.1.1
-DNS1={{ hostvars['rhcsa_repo']['ansible_host'] }}
+DNS1=8.8.8.8
 EOF
 
 # Ensure sys_admin has wheel/sudo access

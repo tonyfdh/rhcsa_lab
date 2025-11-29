@@ -6,7 +6,7 @@ text
 url --url="{{ vm_location_url }}"
 
 # Static IP configuration for the repo VM
-network --bootproto=static --ip={{ vm_ip }} --netmask=255.255.255.0 --gateway=192.168.1.1 --device=eth0 --nameserver=8.8.8.8 --hostname={{ vm_name }}
+network --bootproto=static --ip={{ vm_ip }} --netmask=255.255.255.0 --gateway=192.168.1.1 --device=link --nameserver=8.8.8.8 --hostname={{ vm_name }}
 
 rootpw --plaintext examrepo
 auth --enableshadow --passalgo=sha512
@@ -31,13 +31,12 @@ vim
 %end
 
 %post
-# --- Network Persistence Fix (CRITICAL) ---
-# Create a static configuration file for NetworkManager in %post
-cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
+NIC=$(ip link show | grep -E '^[0-9]+: ' | grep -v lo | head -1 | cut -d: -f2 | tr -d ' ')
+cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$NIC
 TYPE=Ethernet
 BOOTPROTO=none
-NAME=$IFACE
-DEVICE=$IFACE
+NAME=$NIC
+DEVICE=$NIC
 ONBOOT=yes
 IPADDR={{ vm_ip }}
 NETMASK=255.255.255.0

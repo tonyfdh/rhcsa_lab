@@ -6,7 +6,7 @@ This Ansible project automatically provisions a self-contained lab environment s
 
 1. **Ansible Control Node:** Ansible must be installed on the machine you run the playbook from (e.g., your local machine or a dedicated control host). I use my VM Host as the control node..
 
-2. **VM Host (Server):** One physical server running CentOS Stream 9 (or similar RHEL derivative) that will host all VMs. KVM/Libvirt will be installed on this server.
+2. **VM Host (Server):** One physical server running CentOS Stream 9 (or similar RHEL derivative) that will host all VMs. KVM/Libvirt will be installed on this server. Storage Requirement (CRITICAL): The playbook defines a new Libvirt storage pool (rhcsa_storage) that uses the /vmfs mount point. This mount point must exist and have at least 80 GB of free space available for all VMs and the mirrored repository content.
 
 3. **SSH Access:** Your Ansible control node must be able to connect to `Server` via SSH using key-based authentication (recommended).
 

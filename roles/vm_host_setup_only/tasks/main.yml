@@ -27,8 +27,17 @@
     state: enabled
     immediate: yes
 
-- name: Ensure VM images directory exists
+# --- New Storage Pool Definition ---
+- name: Ensure target directory /vmfs/rhcsa_storage exists for new pool
   ansible.builtin.file:
-    path: /var/lib/libvirt/images
+    path: /vmfs/rhcsa_storage
     state: directory
     mode: '0755'
+
+- name: Define and start rhcsa_storage pool in Libvirt (using /vmfs)
+  community.libvirt.virt_pool:
+    name: rhcsa_storage
+    state: active
+    autostart: yes
+    type: dir
+    path: /vmfs/rhcsa_storage

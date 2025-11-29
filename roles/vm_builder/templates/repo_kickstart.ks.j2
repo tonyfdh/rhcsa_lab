@@ -1,38 +1,12 @@
-install
-lang en_US.UTF-8
-keyboard us
-timezone Etc/UTC
-text
-url --url="{{ vm_location_url }}"
-
-# Static IP configuration for the repo VM
-network --bootproto=static --ip={{ vm_ip }} --netmask=255.255.255.0 --gateway=192.168.1.1 --device=link --nameserver=8.8.8.8 --hostname={{ vm_name }}
-
-rootpw --plaintext examrepo
-auth --enableshadow --passalgo=sha512
-selinux --enforcing
-firewall --enabled --ssh
-
-# User for Ansible management
-user --name=ansibleuser --password=ansiblepass --plaintext --groups=wheel
-
-bootloader --location=mbr
-clearpart --all --initlabel
-part / --fstype="xfs" --size=20480
-part swap --size=2048
-
-%packages
-@^minimal-environment
-httpd
-createrepo
-rsync
-net-tools
-vim
-%end
-
 %post
-# Determine the primary network interface
-NIC=$(ip link show | grep -E '^[0-9]+: ' | grep -v lo | head -1 | cut -d: -f2 | tr -d ' ')
+# --- Network Persistence Fix (CRITICAL) ---
+# Dynamically detect the primary network interface (not lo)
+NIC=$(nmcli -t -f DEVICE,TYPE device | grep ethernet | head -1 | cut -d: -f1)
+
+# If nmcli didn't work, fall back to ip command
+if [ -z "$NIC" ]; then
+    NIC=$(ip link show | grep -E '^[0-9]+: ' | grep -v lo | head -1 | awk -F': ' '{print $2}')
+fi
 
 # Check RHEL/Rocky version
 if grep -q "release 9" /etc/redhat-release; then
@@ -42,6 +16,7 @@ if grep -q "release 9" /etc/redhat-release; then
 id=$NIC
 type=ethernet
 interface-name=$NIC
+autoconnect=true
 
 [ethernet]
 
@@ -54,6 +29,9 @@ method=manual
 method=disabled
 EOF
     chmod 600 /etc/NetworkManager/system-connections/$NIC.nmconnection
+    
+    # Remove any auto-generated connection that might conflict
+    rm -f /etc/NetworkManager/system-connections/Wired*.nmconnection
 else
     # RHEL 8 - use ifcfg file
     cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$NIC
@@ -69,7 +47,7 @@ DNS1=8.8.8.8
 EOF
 fi
 
-# Ansible user sudo access
-echo "ansibleuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/ansibleuser
-chmod 0440 /etc/sudoers.d/ansibleuser
+# Ensure sys_admin has wheel/sudo access (or ansibleuser for repo)
+echo "sys_admin ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/sys_admin
+chmod 0440 /etc/sudoers.d/sys_admin
 %end

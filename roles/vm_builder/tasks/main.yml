@@ -1,18 +1,18 @@
 ---
-- name: Copy Kickstart file for {{ vm_name }}
+- name: 📄 Copy Kickstart file for {{ vm_name }}
   ansible.builtin.template:
     src: "{{ vm_kickstart_template_name }}"
-    dest: "/var/lib/libvirt/images/{{ vm_name }}_kickstart.ks"
+    dest: "/vmfs/rhcsa_storage/{{ vm_name }}_kickstart.ks"
     mode: '0644'
   
-- name: Define and start {{ vm_name }} VM installation
+- name: 💻 Define and start {{ vm_name }} VM installation
   ansible.builtin.shell: |
     # Construct the disk path arguments based on the vm_disks variable
     DISK_ARGS=""
     {% for disk in vm_disks %}
-    DISK_ARGS="${DISK_ARGS} --disk path={{ disk.path }},size={{ disk.size }}"
+    DISK_ARGS="${DISK_ARGS} --disk path=/vmfs/rhcsa_storage/{{ vm_name }}_{{ loop.index }}.qcow2,size={{ disk.size }},pool=rhcsa_storage"
     {% endfor %}
-
+    
     virt-install \
       --name {{ vm_name }} \
       --ram 2048 \
@@ -20,15 +20,15 @@
       ${DISK_ARGS} \
       --os-variant {{ vm_os_variant }} \
       --location {{ vm_location_url }} \
-      --initrd-inject "/var/lib/libvirt/images/{{ vm_name }}_kickstart.ks" \
+      --initrd-inject "/vmfs/rhcsa_storage/{{ vm_name }}_kickstart.ks" \
       --extra-args "ks=file:/{{ vm_name }}_kickstart.ks console=tty0 console=ttyS0,115200n8" \
       --network bridge=virbr0,model=virtio \
       --noautoconsole --wait 0
   args:
-    creates: "{{ vm_disks[0].path }}"
+    creates: "/vmfs/rhcsa_storage/{{ vm_name }}_1.qcow2"
   register: vm_install_result
   
-- name: Wait for {{ vm_name }} SSH access before proceeding
+- name: ⏳ Wait for {{ vm_name }} SSH access before proceeding
   ansible.builtin.wait_for:
     port: 22
     host: "{{ vm_ip }}"

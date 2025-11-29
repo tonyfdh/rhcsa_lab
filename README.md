@@ -1,47 +1,53 @@
-# RHCSA Ansible Lab Environment Builder
+# **RHCSA Ansible Lab Environment Builder**
 
-This Ansible project automatically provisions a self-contained lab environment suitable for practicing the Red Hat Certified System Administrator (RHCSA) exam objectives. All virtual machines are built on a single KVM host.
+This Ansible project automatically provisions a self-contained lab environment suitable for practicing the Red Hat Certified System Administrator (RHCSA) exam objectives. All virtual machines are built on a **single KVM host**, which also serves as the Ansible control node.
 
-## Prerequisites
+## **Prerequisites**
 
-1. **Ansible Control Node:** Ansible must be installed on the machine you run the playbook from (e.g., your local machine or a dedicated control host). I use my VM Host as the control node..
+1. **VM Host / Control Node:** One server running CentOS Stream 9 (or similar RHEL derivative) which has:  
+   * **Git** installed.  
+   * The user running the playbook must have sudo privileges.  
+   * **Storage Requirement (CRITICAL):** The playbook defines a new Libvirt storage pool (rhcsa\_storage) that uses the **/vmfs** mount point. This mount point must exist and have **at least 80 GB of free space** available for all VMs and the mirrored repository content.
 
-2. **VM Host (Server):** One physical server running CentOS Stream 9 (or similar RHEL derivative) that will host all VMs. KVM/Libvirt will be installed on this server. Storage Requirement (CRITICAL): The playbook defines a new Libvirt storage pool (rhcsa_storage) that uses the /vmfs mount point. This mount point must exist and have at least 80 GB of free space available for all VMs and the mirrored repository content.
+## **⚙️ Initial Configuration and Software Requirements**
 
-3. **SSH Access:** Your Ansible control node must be able to connect to `Server` via SSH using key-based authentication (recommended).
+To avoid module compatibility errors (like the ones encountered during development), you must ensure your Ansible environment meets these minimum requirements:
 
-4. **IP Configuration:** Ensure the IP addresses you choose for the VMs are available/reserved in your network.
+| Component | Minimum Required Version | Installation Command |
+| :---- | :---- | :---- |
+| **Ansible Core** | 2.14.x | (Usually installed via DNF) |
+| **ansible.posix** | 2.1.0+ | ansible-galaxy collection install ansible.posix |
+| **community.general** | 6.6.0+ | ansible-galaxy collection install community.general |
+| **community.libvirt** | **2.0.0+** | ansible-galaxy collection install community.libvirt |
 
-## ⚙️ Initial Configuration Steps
+**Crucial Step:** Run the ansible-galaxy collection install command for community.libvirt to ensure the virt\_pool module supports the path and type parameters used in this playbook.
 
-Before executing the main playbook, you **must** update the placeholders in the configuration files after cloning this repository.
+### **1\. Update inventory.ini**
 
-### 1. Update `inventory.ini`
-
-You need to define the connection details for your physical VM host, `Server`, and the static IP addresses for the VMs.
-
-| Placeholder | Location | Description |
-| :--- | :--- | :--- |
-| `<SERVER_IP_ADDRESS>` | `[vm_host]` | The public or internal IP address of your physical CentOS Stream 9 server. |
-| `<SSH_USER>` | `[vm_host]` | The username you use to SSH into `Server`. This user must have `sudo` privileges. |
-| `<REPO_VM_IP>` | `[rhcsa_repo]` | Static IP for the Repository VM (e.g., `192.168.1.240`). |
-| `<VM1_IP>` | `[rhcsa_vms]` | Static IP for Exam VM 1 (e.g., `192.168.1.241`). |
-| `<VM2_IP>` | `[rhcsa_vms]` | Static IP for Exam VM 2 (e.g., `192.168.1.242`). |
-
-### 2. Update `ansible.cfg`
+You need to define the static IP addresses for the VMs. The vm\_host group automatically uses localhost.
 
 | Placeholder | Location | Description |
-| :--- | :--- | :--- |
-| `<SSH_USER>` | `[defaults]` | The same SSH username used in `inventory.ini`. This user will be used to connect to all hosts, including the new VMs after they are built. |
+| :---- | :---- | :---- |
+| \<REPO\_VM\_IP\> | \[rhcsa\_repo\] | The chosen static IP for the Repository VM (e.g., 192.168.1.240). |
+| \<VM1\_IP\> | \[rhcsa\_vms\] | The chosen static IP for Exam VM 1 (e.g., 192.168.1.245). |
+| \<VM2\_IP\> | \[rhcsa\_vms\] | The chosen static IP for Exam VM 2 (e.g., 192.168.1.246). |
 
-### 3. Execution
+### **2\. Execution**
 
-Once configured, clone the repository onto your Ansible control node and run the playbook:
+Run these steps *on your VM Host / Control Node*:
 
-```bash
-# Clone the repository (if not already done)
-git clone [https://github.com/tonyfdh/rhcsa_lab.git](https://github.com/tonyfdh/rhcsa_lab.git)
-cd rhcsa_lab
+\# 1\. Clone the repository  
+git clone \[https://github.com/tonyfdh/rhcsa\_lab.git\](https://github.com/tonyfdh/rhcsa\_lab.git)  
+cd rhcsa\_lab
 
-# Execute the main playbook
-ansible-playbook rhcsa_lab_setup.yml
+\# 2\. Update required collections to minimum versions  
+\# ansible-galaxy collection install community.libvirt  
+\# ansible-galaxy collection install community.general
+
+\# 3\. Update inventory.ini with your chosen IPs (required)  
+\# nano inventory.ini
+
+\# 4\. Execute the main playbook  
+ansible-playbook rhcsa\_lab\_setup.yml \-K
+
+**Note:** The playbook will install KVM, build the VMs, and mirror CentOS content. This process takes significant time (especially mirroring the repository).

@@ -172,7 +172,7 @@
         immediate: yes
       
     - name: VM2 Set initial incorrect SELinux file context (ssh_home_t)
-      ansible.posix.sefcontext:
+      community.general.sefcontext:  # <--- CORRECTED FQCN
         target: '/var/www/html(/.*)?'
         setype: ssh_home_t
         state: present

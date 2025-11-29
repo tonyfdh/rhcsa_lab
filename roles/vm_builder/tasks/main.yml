@@ -17,10 +17,11 @@
     INSTALL_SOURCE=""
     EXTRA_ARGS_NET=""
 
-    # If vm_cdrom_path is defined (i.e., we are building the 'repo' VM), use --cdrom
+    # If vm_cdrom_path is defined (i.e., we are building the 'repo' VM), use --location file://
     {% if vm_cdrom_path %}
-    INSTALL_SOURCE="--cdrom {{ vm_cdrom_path }}"
-    EXTRA_ARGS_NET="{{ vm_location_url }}"
+    # FIX: Use file:// protocol with location to enable --extra-args support for Kickstart
+    INSTALL_SOURCE="--location file:///{{ vm_cdrom_path | replace('/vmfs/rhcsa_storage/', '') }}"
+    EXTRA_ARGS_NET="inst.repo=hd:sr0:/"
     {% else %}
     INSTALL_SOURCE="--location {{ vm_location_url }}"
     {% endif %}

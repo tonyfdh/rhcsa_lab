@@ -9,11 +9,23 @@
       - python3-libvirt
     state: present
 
+- name: Install TigerVNC server for console access
+  ansible.builtin.dnf:
+    name: tigervnc-server
+    state: present
+
 - name: Start and enable libvirtd service
   ansible.builtin.systemd:
     name: libvirtd
     state: started
     enabled: yes
+
+- name: Configure firewalld to allow VNC console access (Ports 5900-5905)
+  ansible.posix.firewalld:
+    port: 5900-5905/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
 
 - name: Ensure VM images directory exists
   ansible.builtin.file:

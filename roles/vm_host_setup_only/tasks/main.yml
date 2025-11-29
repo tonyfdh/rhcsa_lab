@@ -56,7 +56,6 @@
 # --- Download Local Installation ISO ---
 - name: Download CentOS Stream 9 Everything ISO to /vmfs/rhcsa_storage (7.7 GB)
   ansible.builtin.get_url:
-    url: "https://mirrors.rit.edu/centos-stream/9/BaseOS/x86_64/iso/CentOS-Stream-9-latest-x86_64-dvd1.iso"
+    url: "https://mirrors.centos.org/mirrorlist?path=/9-stream/BaseOS/x86_64/iso/CentOS-Stream-9-latest-x86_64-dvd1.iso&redirect=1&protocol=https"
     dest: /vmfs/rhcsa_storage/CentOS-Stream-9-latest-x86_64-dvd1.iso
     mode: '0644'
-    checksum: sha256:7737f71583d739e4a3d6d338f0e52b2f7b8a53e944c60205b38520281b37494f # Latest valid checksum as of this date

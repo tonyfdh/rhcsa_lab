@@ -12,8 +12,8 @@ auth --enableshadow --passalgo=sha512
 selinux --enforcing
 firewall --enabled --ssh
 
-# User for Ansible management
-user --name=ansibleuser --password=ansiblepass --plaintext --groups=wheel
+# User for management
+user --name=sys_admin --password=pass$$word minpass --plaintext --groups=wheel
 
 bootloader --location=mbr
 clearpart --all --initlabel
@@ -74,7 +74,8 @@ chmod 0440 /etc/sudoers.d/sys_admin
 systemctl enable sshd
 systemctl enable httpd
 
+# Force reboot
+sync
+echo "Kickstart complete, forcing reboot..." >> /root/ks-post.log
+/sbin/reboot -f
 %end
-
-# THIS IS CRITICAL - tells kickstart to reboot after installation
-reboot

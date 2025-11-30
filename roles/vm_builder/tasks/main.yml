@@ -30,7 +30,7 @@
     creates: "/vmfs/rhcsa_storage/{{ vm_name }}_1.qcow2"
   register: vm_install_result
   
-- name: ⏳ Wait for {{ vm_name }} SSH access before proceeding
+- name: Wait for {{ vm_name }} SSH access before proceeding
   ansible.builtin.wait_for:
     port: 22
     host: "{{ vm_ip }}"
@@ -38,3 +38,47 @@
     delay: 15
   delegate_to: localhost
   when: vm_install_result.changed
+
+- name: Check if SSH key exists for current user
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/.ssh/id_rsa.pub"
+  register: ssh_key_stat
+  delegate_to: localhost
+
+- name: Generate SSH key pair if it doesn't exist
+  ansible.builtin.command:
+    cmd: "ssh-keygen -t rsa -b 4096 -f {{ ansible_env.HOME }}/.ssh/id_rsa -N ''"
+    creates: "{{ ansible_env.HOME }}/.ssh/id_rsa"
+  delegate_to: localhost
+  when: not ssh_key_stat.stat.exists
+
+- name: Read SSH public key
+  ansible.builtin.slurp:
+    src: "{{ ansible_env.HOME }}/.ssh/id_rsa.pub"
+  register: ssh_public_key
+  delegate_to: localhost
+
+- name: Ensure .ssh directory exists for sys_admin
+  ansible.builtin.file:
+    path: /home/sys_admin/.ssh
+    state: directory
+    owner: sys_admin
+    group: sys_admin
+    mode: '0700'
+  delegate_to: "{{ vm_ip }}"
+  vars:
+    ansible_user: sys_admin
+    ansible_password: pa$$word
+
+- name: Install SSH key for sys_admin user on {{ vm_name }}
+  ansible.builtin.lineinfile:
+    path: /home/sys_admin/.ssh/authorized_keys
+    line: "{{ ssh_public_key['content'] | b64decode | trim }}"
+    create: yes
+    mode: '0600'
+    owner: sys_admin
+    group: sys_admin
+  delegate_to: "{{ vm_ip }}"
+  vars:
+    ansible_user: sys_admin
+    ansible_password: pa$$word

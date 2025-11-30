@@ -13,7 +13,7 @@ selinux --enforcing
 firewall --enabled --ssh
 
 # User for management
-user --name=sys_admin --password=pass$$word minpass --plaintext --groups=wheel
+user --name=sys_admin --password=pass$$word --plaintext --groups=wheel
 
 bootloader --location=mbr
 clearpart --all --initlabel

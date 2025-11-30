@@ -68,8 +68,13 @@ DNS1=8.8.8.8
 EOF
 fi
 
-# Ansible user sudo access
 echo "sys_admin ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/sys_admin
 chmod 0440 /etc/sudoers.d/sys_admin
-/usr/sbin/reboot
+# Enable and start sshd
+systemctl enable sshd
+systemctl enable httpd
+
 %end
+
+# THIS IS CRITICAL - tells kickstart to reboot after installation
+reboot --eject

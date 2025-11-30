@@ -93,4 +93,5 @@ chmod 0440 /etc/sudoers.d/sys_admin
 # Ensure sys_admin has wheel/sudo access
 echo "sys_admin ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/sys_admin
 chmod 0440 /etc/sudoers.d/sys_admin
+/usr/sbin/reboot
 %end

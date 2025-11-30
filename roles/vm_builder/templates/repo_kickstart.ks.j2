@@ -69,6 +69,7 @@ EOF
 fi
 
 # Ansible user sudo access
-echo "ansibleuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/ansibleuser
-chmod 0440 /etc/sudoers.d/ansibleuser
+echo "sys_admin ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/sys_admin
+chmod 0440 /etc/sudoers.d/sys_admin
+/usr/sbin/reboot
 %end

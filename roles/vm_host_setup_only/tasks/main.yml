@@ -35,6 +35,14 @@
   community.libvirt.virt_net:
     state: active
     name: default
+    
+- name: Define and Start the RHCSA Lab Network
+  community.libvirt.virt_net:
+    command: define
+    name: rhcsa_net             # Must match the <name> inside your XML
+    xml: "{{ lookup('template', 'rhcsa_net.xml.j2') }}"
+    state: active
+    autostart: yes
 
 # 3. Firewall Configuration (For VNC Access)
 # Your instructions say you will connect to Host_IP:5900, 5901, 5902.

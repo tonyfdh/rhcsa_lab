@@ -1,8 +1,11 @@
+base_image_path: "/vmfs/rhcsa_storage/base_image.qcow2"
+libvirt_dir: "/var/lib/libvirt/images"
+
 lab_vms:
   # --- The Repository Server ---
   - name: rhcsa_repo
     memory: 8192
-    vcpus: 2
+    vcpus: 4
     extra_disks:
       - name: repo_data
         size: "300G"
@@ -20,7 +23,7 @@ lab_vms:
   # --- Node 1 ---
   - name: node1
     memory: 8192
-    vcpus: 1
+    vcpus: 2
     extra_disks:
       - name: vdb
         size: "5G"
@@ -37,7 +40,7 @@ lab_vms:
   # --- Node 2 ---
   - name: node2
     memory: 8192
-    vcpus: 1
+    vcpus: 2
     extra_disks: []
     interfaces:
       - name: eth0

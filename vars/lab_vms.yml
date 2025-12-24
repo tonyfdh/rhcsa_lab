@@ -6,6 +6,8 @@ lab_vms:
   - name: rhcsa_repo
     memory: 8192
     vcpus: 4
+    user: sys_admin
+    password: "pa$$word"
     extra_disks:
       - name: repo_data
         size: "300G"
@@ -24,6 +26,8 @@ lab_vms:
   - name: node1
     memory: 8192
     vcpus: 2
+    user: sys_admin
+    password: "pa$$word"
     extra_disks:
       - name: vdb
         size: "5G"
@@ -41,6 +45,8 @@ lab_vms:
   - name: node2
     memory: 8192
     vcpus: 2
+    user: sys_admin
+    password: "pa$$word"
     extra_disks: []
     interfaces:
       - name: eth0

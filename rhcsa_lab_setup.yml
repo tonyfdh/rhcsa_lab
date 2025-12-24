@@ -34,8 +34,9 @@
         groups: 
           - "lab_created_{{ 'repo' if 'repo' in item.item.name else 'nodes' }}"
         ansible_host: "{{ item.stdout }}"
-        ansible_user: sys_admin
-        ansible_password: "pa$$word"
+        ansible_user: "{{ item.item.user }}"
+        ansible_password: "{{ item.item.password }}"
+        ansible_become_password: "{{ item.item.password }}"
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
       loop: "{{ vm_ips.results }}"
 

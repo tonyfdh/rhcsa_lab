@@ -1,0 +1,33 @@
+---
+- name: Destroy RHCSA Lab Environment
+  hosts: vm_host
+  become: true
+  vars_files:
+    - vars/lab_vms.yml
+
+  tasks:
+    - name: Stop VMs (Destroy)
+      community.libvirt.virt:
+        name: "{{ item.name }}"
+        state: destroyed
+      loop: "{{ lab_vms }}"
+      ignore_errors: true # Continues if VM is already stopped
+
+    - name: Undefine VMs (Remove from KVM)
+      community.libvirt.virt:
+        name: "{{ item.name }}"
+        command: undefine
+      loop: "{{ lab_vms }}"
+      ignore_errors: true # Continues if VM doesn't exist
+
+    - name: Remove VM Main Disks (Overlays)
+      ansible.builtin.file:
+        path: "{{ libvirt_dir }}/{{ item.name }}.qcow2"
+        state: absent
+      loop: "{{ lab_vms }}"
+
+    - name: Remove Extra Disks (Repo data, LVM disks)
+      ansible.builtin.file:
+        path: "{{ libvirt_dir }}/{{ item.0.name }}_{{ item.1.name }}.qcow2"
+        state: absent
+      loop: "{{ lab_vms | subelements('extra_disks', skip_missing=True) }}"

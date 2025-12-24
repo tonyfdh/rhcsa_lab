@@ -24,7 +24,30 @@
     creates: "{{ libvirt_dir }}/{{ item.0.name }}_{{ item.1.name }}.qcow2"
   loop: "{{ lab_vms | subelements('extra_disks', skip_missing=True) }}"
 
-- name: Set Hostname and Password (virt-customize)
+# 1. Generate NetworkManager Connection Files
+- name: Inject Network Configuration (Static IPs)
+  ansible.builtin.copy:
+    dest: "/tmp/{{ item.0.name }}_{{ item.1.name }}.nmconnection"
+    mode: '0600'
+    content: |
+      [connection]
+      id={{ item.1.name }}
+      type=ethernet
+      interface-name={{ item.1.name }}
+      
+      [ipv4]
+      method={{ item.1.method }}
+      {% if item.1.method == 'manual' %}
+      address1={{ item.1.ip }}/{{ item.1.mask }}{{ ',' + item.1.gateway if item.1.gateway is defined else '' }}
+      {% endif %}
+      
+      [ipv6]
+      method=ignore
+  loop: "{{ lab_vms | subelements('interfaces') }}"
+  delegate_to: localhost
+
+# 2. Run virt-customize to Upload Files and Set Hostname
+- name: Apply Configuration to Disk
   ansible.builtin.command:
     cmd: >
       virt-customize -a {{ libvirt_dir }}/{{ item.name }}.qcow2
@@ -32,8 +55,11 @@
       --root-password password:pa$$word
       --uninstall cloud-init
       --selinux-relabel
+      {% for iface in item.interfaces %}
+      --upload /tmp/{{ item.name }}_{{ iface.name }}.nmconnection:/etc/NetworkManager/system-connections/{{ iface.name }}.nmconnection
+      --chmod 0600:/etc/NetworkManager/system-connections/{{ iface.name }}.nmconnection
+      {% endfor %}
   loop: "{{ lab_vms }}"
-  # CRITICAL: Only run if the VM does NOT exist in the virsh list
   when: item.name not in existing_vms.stdout_lines
 
 - name: Define and Start VMs
@@ -48,8 +74,8 @@
       --disk path={{ libvirt_dir }}/{{ item.name }}_{{ disk.name }}.qcow2,device=disk,bus=virtio
       {% endfor %}
       --os-variant rhel9.0
-      {% for net in item.networks %}
-      --network network={{ net.name }},model=virtio
+      {% for iface in item.interfaces %}
+      --network network={{ iface.network }},model=virtio
       {% endfor %}
       --graphics vnc,listen=0.0.0.0
       --import

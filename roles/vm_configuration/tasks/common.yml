@@ -1,0 +1,37 @@
+---
+# We need to find the IP of the repo server we just built.
+# We look at the 'lab_created_repo' group we made in the main playbook.
+- name: Set Fact for Repo IP
+  ansible.builtin.set_fact:
+    repo_ip: "{{ hostvars[groups['lab_created_repo'][0]]['ansible_host'] }}"
+
+- name: Configure Lab Repositories
+  ansible.builtin.yum_repository:
+    name: lab_baseos
+    description: Lab BaseOS
+    baseurl: "http://{{ repo_ip }}/repos/baseos"
+    gpgcheck: no
+    enabled: yes
+
+- name: Configure AppStream Repository
+  ansible.builtin.yum_repository:
+    name: lab_appstream
+    description: Lab AppStream
+    baseurl: "http://{{ repo_ip }}/repos/appstream"
+    gpgcheck: no
+    enabled: yes
+
+- name: Ensure Production Group exists (Exam Requirement)
+  ansible.builtin.group:
+    name: production
+    gid: 2000
+
+- name: Ensure Production Users exist
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    uid: "{{ item.uid }}"
+    group: production
+    password: "{{ 'pa$$word' | password_hash('sha512') }}"
+  loop:
+    - { name: 'prod_user1', uid: 2001 }
+    - { name: 'prod_user2', uid: 2002 }

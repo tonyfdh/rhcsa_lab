@@ -1,0 +1,57 @@
+---
+# --- NFS CONFIGURATION ---
+- name: Install NFS Utils
+  ansible.builtin.dnf:
+    name: nfs-utils
+    state: present
+
+- name: Create NFS Export Directory
+  ansible.builtin.file:
+    path: /opt/nfs
+    state: directory
+    mode: '0777'
+
+- name: Configure /etc/exports
+  ansible.builtin.copy:
+    dest: /etc/exports
+    content: "/opt/nfs *(rw,sync,no_root_squash)"
+
+- name: Start NFS Server
+  ansible.builtin.service:
+    name: nfs-server
+    state: started
+    enabled: yes
+  # Reload just in case it was already running
+  notify: Restart NFS
+
+# --- EXAM OBJECTIVE PREP ---
+- name: Create Dummy Data for Backup Task
+  ansible.builtin.file:
+    path: /data/backup_source
+    state: directory
+    mode: '0755'
+    recurse: yes
+
+- name: Populate Dummy Files
+  ansible.builtin.file:
+    path: "/data/backup_source/file_{{ item }}"
+    state: touch
+  loop: "{{ range(1, 6) | list }}"
+
+- name: Create Log Data for Grep Task
+  ansible.builtin.copy:
+    dest: /tmp/log_data.txt
+    content: |
+      [INFO] System started normally.
+      [ERROR] Connection refused at 2025/11/28.
+      [WARN] Disk usage high.
+      [ERROR] Critical failure in module X at 2025/11/29.
+      [INFO] User logged out.
+      [ERROR] Another error occurred at 2025/11/29.
+
+  # Handlers defined inline for simplicity, or put in handlers/main.yml
+  handlers:
+    - name: Restart NFS
+      ansible.builtin.service:
+        name: nfs-server
+        state: reloaded

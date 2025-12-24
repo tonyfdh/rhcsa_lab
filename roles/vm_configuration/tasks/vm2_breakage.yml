@@ -1,0 +1,83 @@
+---
+# --- WEB SERVER BREAKAGE ---
+- name: Install HTTPD
+  ansible.builtin.dnf:
+    name: httpd
+    state: present
+
+- name: Create Broken Index File (Wrong Permissions)
+  ansible.builtin.copy:
+    dest: /var/www/html/index.html
+    content: "Welcome to the broken server."
+    mode: '0000'
+
+- name: Create Success File (Wrong Context)
+  ansible.builtin.copy:
+    dest: /var/www/html/success.html
+    content: "Great Success!"
+    setype: samba_share_t # Intentionally wrong context
+
+- name: Configure HTTPD Port 82
+  ansible.builtin.lineinfile:
+    path: /etc/httpd/conf/httpd.conf
+    regexp: '^Listen '
+    line: 'Listen 82'
+
+- name: Start HTTPD (Will fail/warn due to SELinux)
+  ansible.builtin.service:
+    name: httpd
+    state: started
+    enabled: yes
+  ignore_errors: true
+
+# --- HIDDEN PROCESS ---
+- name: Create Annoying Script
+  ansible.builtin.copy:
+    dest: /usr/local/bin/annoy.sh
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      while true; do sleep 1; done
+
+- name: Start Annoying Process
+  ansible.builtin.shell: "nohup /usr/local/bin/annoy.sh > /dev/null 2>&1 &"
+
+# --- SYSTEM BREAKAGE (Must be last) ---
+
+# 1. Break Network (Next Boot)
+- name: Create Bad Network Config
+  ansible.builtin.copy:
+    dest: /etc/NetworkManager/system-connections/eth0.nmconnection
+    mode: '0600'
+    content: |
+      [connection]
+      id=eth0
+      type=ethernet
+      interface-name=eth0
+      
+      [ipv4]
+      method=manual
+      # Wrong IP that doesn't exist in our lab range
+      address1=192.168.55.250/24,192.168.55.1
+      dns=8.8.8.8;
+      
+      [ipv6]
+      method=ignore
+
+# 2. Break Fstab (Next Boot)
+- name: Break Fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "UUID=fake-uuid-1234-5678  /mnt/fail  xfs  defaults  0 0"
+
+# 3. Lock User
+- name: Lock sys_admin
+  ansible.builtin.user:
+    name: sys_admin
+    password_lock: yes
+
+# 4. Scramble Root Password
+- name: Scramble Root Password
+  ansible.builtin.user:
+    name: root
+    password: "$6$randomsalt$VeryLongHashThatIsImpossibleToGuess..."

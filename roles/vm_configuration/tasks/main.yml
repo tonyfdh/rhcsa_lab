@@ -1,0 +1,11 @@
+---
+- name: Apply Common Configuration
+  ansible.builtin.include_tasks: common.yml
+
+- name: Configure VM1 (Infrastructure Node)
+  ansible.builtin.include_tasks: vm1_setup.yml
+  when: "'node1' in inventory_hostname"
+
+- name: Configure VM2 (The Broken Node)
+  ansible.builtin.include_tasks: vm2_breakage.yml
+  when: "'node2' in inventory_hostname"

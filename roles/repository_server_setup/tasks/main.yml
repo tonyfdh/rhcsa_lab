@@ -1,12 +1,45 @@
----
+# --- CENTOS REPO CONFIGURATION (Fixes "No package available") ---
+- name: Disable Subscription Manager Plugin
+  ansible.builtin.lineinfile:
+    path: /etc/yum/pluginconf.d/subscription-manager.conf
+    regexp: '^enabled='
+    line: 'enabled=0'
+    state: present
+
+- name: Import CentOS Stream 9 GPG Key
+  rpm_key:
+    state: present
+    key: https://www.centos.org/keys/RPM-GPG-KEY-CentOS-Official
+
+- name: Add CentOS Stream 9 BaseOS Repo
+  ansible.builtin.yum_repository:
+    name: centos-stream-baseos
+    description: CentOS Stream 9 BaseOS
+    baseurl: https://mirror.stream.centos.org/9-stream/BaseOS/$basearch/os/
+    gpgcheck: yes
+    gpgkey: https://www.centos.org/keys/RPM-GPG-KEY-CentOS-Official
+    enabled: yes
+
+- name: Add CentOS Stream 9 AppStream Repo
+  ansible.builtin.yum_repository:
+    name: centos-stream-appstream
+    description: CentOS Stream 9 AppStream
+    baseurl: https://mirror.stream.centos.org/9-stream/AppStream/$basearch/os/
+    gpgcheck: yes
+    gpgkey: https://www.centos.org/keys/RPM-GPG-KEY-CentOS-Official
+    enabled: yes
+
+# --- PACKAGE INSTALLATION ---
 - name: Install Repo Tools
   ansible.builtin.dnf:
     name:
       - httpd
-      - createrepo
+      - createrepo_c             # <-- UPDATED NAME for EL9
       - flatpak
       - policycoreutils-python-utils
     state: present
+    disablerepo: "*"
+    enablerepo: "centos-stream*" # Force usage of our new repos
 
 # --- STORAGE SETUP (300GB Disk) ---
 - name: Create Partition on Data Disk
@@ -26,6 +59,7 @@
     path: /var/www/html/repos
     state: directory
     mode: '0755'
+    # We set this, but mounting might hide it, so we fix it after mount too
     setype: httpd_sys_content_t
 
 - name: Mount Data Disk
@@ -34,6 +68,10 @@
     src: /dev/vdb1
     fstype: xfs
     state: mounted
+
+# CRITICAL FIX: Restore SELinux context AFTER mount
+- name: Restore SELinux Context on Repo Dir
+  ansible.builtin.command: restorecon -Rv /var/www/html/repos
 
 # --- FLATPAK SETUP ---
 - name: Create Flatpak Repo Directory
@@ -70,13 +108,16 @@
     mode: '0755'
     content: |
       #!/bin/bash
-      # A helper script for you to run manually later to fill the disk
+      # Syncing from CentOS Stream 9 mirrors
       echo "Syncing BaseOS..."
-      reposync -p /var/www/html/repos --repo=baseos --download-metadata
+      reposync -p /var/www/html/repos --repo=centos-stream-baseos --download-metadata
+      
       echo "Syncing AppStream..."
-      reposync -p /var/www/html/repos --repo=appstream --download-metadata
-      createrepo /var/www/html/repos/baseos
-      createrepo /var/www/html/repos/appstream
+      reposync -p /var/www/html/repos --repo=centos-stream-appstream --download-metadata
+      
+      # Using createrepo_c
+      createrepo_c /var/www/html/repos/centos-stream-baseos
+      createrepo_c /var/www/html/repos/centos-stream-appstream
       echo "Done."
 
 - name: Create Client .repo File (Hosted on Server)
@@ -86,12 +127,12 @@
     content: |
       [lab-baseos]
       name=Lab BaseOS
-      baseurl=http://{{ ansible_host }}/repos/baseos
+      baseurl=http://192.168.55.10/repos/centos-stream-baseos
       gpgcheck=0
       enabled=1
 
       [lab-appstream]
       name=Lab AppStream
-      baseurl=http://{{ ansible_host }}/repos/appstream
+      baseurl=http://192.168.55.10/repos/centos-stream-appstream
       gpgcheck=0
       enabled=1

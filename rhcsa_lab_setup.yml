@@ -17,21 +17,23 @@
       ansible.builtin.pause:
         seconds: 30
 
-    - name: Get VM IP addresses
-      ansible.builtin.shell: "virsh domifaddr {{ item.name }} --source lease | grep ipv4 | awk '{print $4}' | cut -d/ -f1"
+    - name: Get VM IP addresses (Filter for 192.168.55.x)
+      shell: >
+        virsh domifaddr {{ item.name }} --source agent
+        | grep -o "192\.168\.55\.[0-9]*"
+      loop: "{{ vms }}"
       register: vm_ips
-      loop: "{{ lab_vms }}"
+      until: vm_ips.stdout != ""
+      retries: 10
+      delay: 5
       changed_when: false
 
-    - name: Add VMs to In-Memory Inventory
-      ansible.builtin.add_host:
+    - name: Add VMs to inventory
+      add_host:
         name: "{{ item.item.name }}"
-        groups: 
-          - "lab_created_{{ 'repo' if 'repo' in item.item.name else 'nodes' }}"
-        ansible_host: "{{ item.stdout }}"
-        ansible_user: root
-        ansible_password: "pa$$word"
-        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+        ansible_host: "{{ item.stdout }}"  
+        groups: "{{ item.item.groups }}"
+        ansible_user: sys_admin
       loop: "{{ vm_ips.results }}"
 
 # ==============================================================================

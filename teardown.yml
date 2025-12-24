@@ -31,3 +31,17 @@
         path: "{{ libvirt_dir }}/{{ item.0.name }}_{{ item.1.name }}.qcow2"
         state: absent
       loop: "{{ lab_vms | subelements('extra_disks', skip_missing=True) }}"
+    
+    - name: Remove VM SSH keys from known_hosts
+      known_hosts:
+        name: "{{ item }}"
+        state: absent
+        path: ~/.ssh/known_hosts
+      loop:
+        - "192.168.55.10"
+        - "192.168.55.11"
+        - "192.168.55.12"
+        # If you ever connect via hostname, add those too:
+        - "rhcsa_repo"
+        - "node1"
+        - "node2"

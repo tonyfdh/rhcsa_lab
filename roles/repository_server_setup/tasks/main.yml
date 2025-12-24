@@ -1,0 +1,97 @@
+---
+- name: Install Repo Tools
+  ansible.builtin.dnf:
+    name:
+      - httpd
+      - createrepo
+      - flatpak
+      - policycoreutils-python-utils
+    state: present
+
+# --- STORAGE SETUP (300GB Disk) ---
+- name: Create Partition on Data Disk
+  community.general.parted:
+    device: /dev/vdb
+    number: 1
+    state: present
+    fs_type: xfs
+
+- name: Format Data Disk
+  ansible.builtin.filesystem:
+    fstype: xfs
+    dev: /dev/vdb1
+
+- name: Create Web Root for Repos
+  ansible.builtin.file:
+    path: /var/www/html/repos
+    state: directory
+    mode: '0755'
+    setype: httpd_sys_content_t
+
+- name: Mount Data Disk
+  ansible.builtin.mount:
+    path: /var/www/html/repos
+    src: /dev/vdb1
+    fstype: xfs
+    state: mounted
+
+# --- FLATPAK SETUP ---
+- name: Create Flatpak Repo Directory
+  ansible.builtin.file:
+    path: /var/www/html/flatpak_repo
+    state: directory
+    mode: '0755'
+    setype: httpd_sys_content_t
+
+- name: Initialize Flatpak Repository
+  ansible.builtin.command:
+    cmd: flatpak build-export-repo /var/www/html/flatpak_repo
+  args:
+    creates: /var/www/html/flatpak_repo/config
+
+# --- HTTPD & FIREWALL ---
+- name: Enable and Start HTTPD
+  ansible.builtin.service:
+    name: httpd
+    state: started
+    enabled: yes
+
+- name: Open Firewall for HTTP
+  ansible.posix.firewalld:
+    service: http
+    permanent: yes
+    state: enabled
+    immediate: yes
+
+# --- HELPER SCRIPTS ---
+- name: Create Sync Script
+  ansible.builtin.copy:
+    dest: /usr/local/bin/sync_repos.sh
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      # A helper script for you to run manually later to fill the disk
+      echo "Syncing BaseOS..."
+      reposync -p /var/www/html/repos --repo=baseos --download-metadata
+      echo "Syncing AppStream..."
+      reposync -p /var/www/html/repos --repo=appstream --download-metadata
+      createrepo /var/www/html/repos/baseos
+      createrepo /var/www/html/repos/appstream
+      echo "Done."
+
+- name: Create Client .repo File (Hosted on Server)
+  ansible.builtin.copy:
+    dest: /var/www/html/lab.repo
+    mode: '0644'
+    content: |
+      [lab-baseos]
+      name=Lab BaseOS
+      baseurl=http://{{ ansible_host }}/repos/baseos
+      gpgcheck=0
+      enabled=1
+
+      [lab-appstream]
+      name=Lab AppStream
+      baseurl=http://{{ ansible_host }}/repos/appstream
+      gpgcheck=0
+      enabled=1

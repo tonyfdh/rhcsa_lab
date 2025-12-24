@@ -1,15 +1,57 @@
 ---
-- name: "Step 1: Configure Hypervisor Host"
-  hosts: vm_host
-  become: true
-  roles:
-    - role: vm_host_setup_only
-
-- name: "Step 2: Provision Virtual Machines"
+# ==============================================================================
+# PHASE 1: PROVISIONING & DISCOVERY
+# ==============================================================================
+- name: "Phase 1: Provision Infrastructure"
   hosts: vm_host
   become: true
   vars_files:
     - vars/lab_vms.yml
-  
+
   roles:
+    - role: vm_host_setup_only
     - role: vm_builder
+
+  tasks:
+    - name: Wait for VMs to acquire IPs (DHCP)
+      ansible.builtin.pause:
+        seconds: 30
+
+    - name: Get VM IP addresses
+      ansible.builtin.shell: "virsh domifaddr {{ item.name }} --source lease | grep ipv4 | awk '{print $4}' | cut -d/ -f1"
+      register: vm_ips
+      loop: "{{ lab_vms }}"
+      changed_when: false
+
+    - name: Add VMs to In-Memory Inventory
+      ansible.builtin.add_host:
+        name: "{{ item.item.name }}"
+        groups: 
+          - "lab_created_{{ 'repo' if 'repo' in item.item.name else 'nodes' }}"
+        ansible_host: "{{ item.stdout }}"
+        ansible_user: root
+        ansible_password: "pa$$word"
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+      loop: "{{ vm_ips.results }}"
+
+# ==============================================================================
+# PHASE 2: REPO SERVER CONFIGURATION
+# ==============================================================================
+- name: "Phase 2: Configure Repository Server"
+  hosts: lab_created_repo
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: repository_server_setup
+
+# ==============================================================================
+# PHASE 3: LAB SCENARIO CONFIGURATION
+# ==============================================================================
+- name: "Phase 3: Configure Lab Nodes"
+  hosts: lab_created_nodes
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: vm_configuration

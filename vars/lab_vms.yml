@@ -1,0 +1,41 @@
+base_image_path: "/var/lib/libvirt/images/base_image.qcow2"
+libvirt_dir: "/var/lib/libvirt/images"
+
+lab_vms:
+  # --- The Repository Server ---
+  - name: rhcsa_repo
+    memory: 2048
+    vcpus: 2
+    # Repo needs TWO NICs: One for internet (default), one for the private lab
+    networks:
+      - name: default
+      - name: rhcsa_lab_net
+        ip: "192.168.55.10"
+    # Repo needs a big disk to store the RPMs
+    extra_disks:
+      - name: repo_data
+        size: "300G"
+
+  # --- Node 1 (Infrastructure) ---
+  - name: node1
+    memory: 2048
+    vcpus: 1
+    networks:
+      - name: rhcsa_lab_net
+        ip: "192.168.55.11"
+    # Exam Requirement: VM1 needs extra disks for LVM tasks
+    extra_disks:
+      - name: vdb
+        size: "5G"
+      - name: vdc
+        size: "1G"
+
+  # --- Node 2 (The Broken One) ---
+  - name: node2
+    memory: 2048
+    vcpus: 1
+    networks:
+      - name: rhcsa_lab_net
+        ip: "192.168.55.12"
+    # No extra disks needed for VM2
+    extra_disks: []

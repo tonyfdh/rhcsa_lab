@@ -2,7 +2,14 @@
 - name: "Step 1: Configure Hypervisor Host"
   hosts: vm_host
   become: true
-  gather_facts: true
-  
   roles:
     - role: vm_host_setup_only
+
+- name: "Step 2: Provision Virtual Machines"
+  hosts: vm_host
+  become: true
+  vars_files:
+    - vars/lab_vms.yml
+  
+  roles:
+    - role: vm_builder

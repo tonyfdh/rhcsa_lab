@@ -1,0 +1,62 @@
+---
+- name: Install libguestfs-tools
+  ansible.builtin.dnf:
+    name: libguestfs-tools
+    state: present
+
+# SAFETY CHECK: Get a list of all VMs (running or stopped)
+- name: Check for existing VMs
+  ansible.builtin.command: virsh list --all --name
+  register: existing_vms
+  changed_when: false
+
+- name: Create VM Images (Overlay Method)
+  ansible.builtin.command:
+    cmd: "qemu-img create -f qcow2 -F qcow2 -b {{ base_image_path }} {{ libvirt_dir }}/{{ item.name }}.qcow2"
+  args:
+    creates: "{{ libvirt_dir }}/{{ item.name }}.qcow2"
+  loop: "{{ lab_vms }}"
+
+- name: Create Extra Disks
+  ansible.builtin.command:
+    cmd: "qemu-img create -f qcow2 {{ libvirt_dir }}/{{ item.0.name }}_{{ item.1.name }}.qcow2 {{ item.1.size }}"
+  args:
+    creates: "{{ libvirt_dir }}/{{ item.0.name }}_{{ item.1.name }}.qcow2"
+  loop: "{{ lab_vms | subelements('extra_disks', skip_missing=True) }}"
+
+- name: Set Hostname and Password (virt-customize)
+  ansible.builtin.command:
+    cmd: >
+      virt-customize -a {{ libvirt_dir }}/{{ item.name }}.qcow2
+      --hostname {{ item.name }}.lab.example.com
+      --root-password password:pa$$word
+      --uninstall cloud-init
+      --selinux-relabel
+  loop: "{{ lab_vms }}"
+  # CRITICAL: Only run if the VM does NOT exist in the virsh list
+  when: item.name not in existing_vms.stdout_lines
+
+- name: Define and Start VMs
+  ansible.builtin.command:
+    cmd: >
+      virt-install
+      --name {{ item.name }}
+      --memory {{ item.memory }}
+      --vcpus {{ item.vcpus }}
+      --disk path={{ libvirt_dir }}/{{ item.name }}.qcow2,device=disk,bus=virtio
+      {% for disk in item.extra_disks | default([]) %}
+      --disk path={{ libvirt_dir }}/{{ item.name }}_{{ disk.name }}.qcow2,device=disk,bus=virtio
+      {% endfor %}
+      --os-variant rhel9.0
+      {% for net in item.networks %}
+      --network network={{ net.name }},model=virtio
+      {% endfor %}
+      --graphics vnc,listen=0.0.0.0
+      --import
+      --noautoconsole
+  register: vm_define
+  failed_when: 
+    - vm_define.rc != 0 
+    - "'already exists' not in vm_define.stderr"
+  changed_when: vm_define.rc == 0
+  loop: "{{ lab_vms }}"

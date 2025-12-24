@@ -1,0 +1,30 @@
+name = "base_image"
+description = "Generic Golden Image for RHCSA/RHCE Labs"
+version = "0.0.1"
+modules = []
+groups = []
+
+[[packages]]
+name = "vim"
+version = "*"
+
+[[packages]]
+name = "qemu-guest-agent"
+version = "*"
+
+[[packages]]
+name = "net-tools"
+version = "*"
+
+[[packages]]
+name = "rsync"
+version = "*"
+
+[[customizations.user]]
+name = "sys_admin"
+description = "Lab Administrator"
+password = "$6$rhcsa_salt$86yN3D4i9B9e0.bS2x/7c1tM1w8Y5s7V3f6P5F6I2"
+groups = ["wheel"]
+
+[customizations.services]
+enabled = ["sshd", "qemu-guest-agent"]

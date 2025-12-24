@@ -4,7 +4,7 @@ libvirt_dir: "/var/lib/libvirt/images"
 lab_vms:
   # --- The Repository Server ---
   - name: rhcsa_repo
-    memory: 2048
+    memory: 8192
     vcpus: 2
     # Repo needs TWO NICs: One for internet (default), one for the private lab
     networks:
@@ -18,7 +18,7 @@ lab_vms:
 
   # --- Node 1 (Infrastructure) ---
   - name: node1
-    memory: 2048
+    memory: 8192
     vcpus: 1
     networks:
       - name: rhcsa_lab_net
@@ -32,7 +32,7 @@ lab_vms:
 
   # --- Node 2 (The Broken One) ---
   - name: node2
-    memory: 2048
+    memory: 8192
     vcpus: 1
     networks:
       - name: rhcsa_lab_net

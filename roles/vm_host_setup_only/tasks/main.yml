@@ -2,12 +2,10 @@
 # 1. Install Virtualization Packages
 - name: Install Virtualization Group
   ansible.builtin.dnf:
-    name: "@Virtualization Host"
-    state: present
-
-- name: Install Python Libvirt bindings (Required for Ansible)
-  ansible.builtin.dnf:
-    name: python3-libvirt
+    name: 
+      - "@Virtualization Host"
+      - python3-libvirt
+      - guestfs-tools
     state: present
 
 - name: Ensure Libvirtd is running

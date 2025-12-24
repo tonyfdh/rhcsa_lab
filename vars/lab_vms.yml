@@ -1,4 +1,4 @@
-base_image_path: "/var/lib/libvirt/images/base_image.qcow2"
+base_image_path: "/vmfs/rhcsa_storage/base_image.qcow2"
 libvirt_dir: "/var/lib/libvirt/images"
 
 lab_vms:

@@ -1,98 +1,55 @@
+# CentOS Stream 9 - Golden Image Template Kickstart
+# This template is designed to be built ONCE, then cloned.
 lang en_US.UTF-8
 keyboard us
 timezone Etc/UTC
 text
-# Installation source points to the local repository VM
-url --url="{{ vm_location_url }}" 
-repo --name="AppStream" --baseurl="http://{{ hostvars['repo']['ansible_host'] }}/centos9stream/AppStream"
 
-# Static IP configuration for the VM
-network --bootproto=static --ip={{ vm_ip }} --netmask=255.255.255.0 --gateway=192.168.1.1 --device=link --nameserver=8.8.8.8 --hostname={{ vm_name }}
+# Installation source - This should point to your Repo VM or a public mirror
+url --url="{{ vm_location_url }}"
 
-# VM1 Root Password: pa$$word (will be changed for VM2 later)
+# COMMAND SECTION: Forces automatic reboot and ejects "media"
+reboot --eject
+
+# For a Golden Image, we use DHCP. Static IPs are applied to CLONES via Ansible.
+network --bootproto=dhcp --device=link --activate --hostname=base-template
+
+# Password Management
 # Hash for 'pa$$word': $6$rhcsa_salt$86yN3D4i9B9e0.bS2x/7c1tM1w8Y5s7V3f6P5F6I2
 rootpw --iscrypted $6$rhcsa_salt$86yN3D4i9B9e0.bS2x/7c1tM1w8Y5s7V3f6P5F6I2
 auth --enableshadow --passalgo=sha512
 selinux --enforcing
 firewall --enabled --ssh
 
-# Standard exam user: sys_admin
+# Standard admin user
 user --name=sys_admin --iscrypted $6$rhcsa_salt$86yN3D4i9B9e0.bS2x/7c1tM1w8Y5s7V3f6P5F6I2 --groups=wheel
 
+# Disk Partitioning
 bootloader --location=mbr
-
-# Partitioning: Use vda for OS, leaving vdb and vdc completely free for LVM/Swap objectives on VM1
 clearpart --all --initlabel
-part / --fstype="xfs" --size=7168 
+part / --fstype="xfs" --size=10240 
 part /boot --fstype="xfs" --size=1024
-# Swap will be configured later by the exam taker
+part swap --size=2048
 
 %packages
 @^minimal-environment
 @guest-agents
 vim
 net-tools
-nfs-utils
-vfat-utils
-parted
-lsscsi
+rsync
 tar
-gzip
-bzip2
-cronie
-at
-firewalld
-httpd # Install httpd on both, VM2 will configure it.
 %end
 
-%post
-# --- Network Persistence Fix (CRITICAL) ---
-# Create a static configuration file for NetworkManager
-NIC=$(ip link show | grep -E '^[0-9]+: ' | grep -v lo | head -1 | cut -d: -f2 | tr -d ' ')
-
-# Check RHEL/Rocky version
-if grep -q "release 9" /etc/redhat-release; then
-    # RHEL 9 - use NetworkManager keyfile
-    cat << EOF > /etc/NetworkManager/system-connections/$NIC.nmconnection
-[connection]
-id=$NIC
-type=ethernet
-interface-name=$NIC
-
-[ethernet]
-
-[ipv4]
-address1={{ vm_ip }}/24,192.168.1.1
-dns=8.8.8.8;
-method=manual
-
-[ipv6]
-method=disabled
-EOF
-    chmod 600 /etc/NetworkManager/system-connections/$NIC.nmconnection
-else
-    # RHEL 8 - use ifcfg file
-    cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$NIC
-TYPE=Ethernet
-BOOTPROTO=none
-NAME=$NIC
-DEVICE=$NIC
-ONBOOT=yes
-IPADDR={{ vm_ip }}
-NETMASK=255.255.255.0
-GATEWAY=192.168.1.1
-DNS1=8.8.8.8
-EOF
-fi
-
-# Ensure sys_admin has wheel/sudo access
+%post --log=/root/ks-post.log
+# 1. Setup Sudoers for Ansible
 echo "sys_admin ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/sys_admin
 chmod 0440 /etc/sudoers.d/sys_admin
-%end
 
-# Ensure sys_admin has wheel/sudo access
-echo "sys_admin ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/sys_admin
-chmod 0440 /etc/sudoers.d/sys_admin
-%end
+# 2. Prep SSH for Ansible Key Injection later
+mkdir -p /home/sys_admin/.ssh
+chmod 700 /home/sys_admin/.ssh
+chown sys_admin:sys_admin /home/sys_admin/.ssh
 
-reboot
+# 3. Enable guest agent so the Host can see the VM status
+systemctl enable qemu-guest-agent
+%end

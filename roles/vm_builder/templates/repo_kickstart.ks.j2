@@ -1,81 +1,60 @@
+# CentOS Stream 9 - Golden Image Template Kickstart
 lang en_US.UTF-8
 keyboard us
 timezone Etc/UTC
 text
+
+# Use the network mirror
 url --url="{{ vm_location_url }}"
 
-# Static IP configuration for the repo VM
-network --bootproto=static --ip={{ vm_ip }} --netmask=255.255.255.0 --gateway=192.168.1.1 --device=link --nameserver=8.8.8.8 --hostname={{ vm_name }} --activate
+# MANDATORY: Tells Anaconda to reboot automatically when done
+reboot --eject
 
-rootpw --plaintext examrepo
+# For a Golden Image, use DHCP. Ansible will set static IPs on the clones.
+network --bootproto=dhcp --device=link --activate --hostname=base-template
+
+rootpw --plaintext pa$$word
 auth --enableshadow --passalgo=sha512
 selinux --enforcing
 firewall --enabled --ssh
 
-# User for management
-user --name=sys_admin --password=pass$$word --plaintext --groups=wheel
+# Main admin user
+user --name=sys_admin --password=pa$$word --plaintext --groups=wheel
 
+# Disk configuration
 bootloader --location=mbr
 clearpart --all --initlabel
-part / --fstype="xfs" --size=20480
+part / --fstype="xfs" --size=15360  # 15GB Root
 part swap --size=2048
 
 %packages
 @^minimal-environment
-httpd
-createrepo
-rsync
-net-tools
 vim
+net-tools
+rsync
+qemu-guest-agent
 %end
 
-%post
-# Determine the primary network interface
-NIC=$(ip link show | grep -E '^[0-9]+: ' | grep -v lo | head -1 | cut -d: -f2 | tr -d ' ')
-
-# Check RHEL/Rocky version
-if grep -q "release 9" /etc/redhat-release; then
-    # RHEL 9 - use NetworkManager keyfile
-    cat << EOF > /etc/NetworkManager/system-connections/$NIC.nmconnection
-[connection]
-id=$NIC
-type=ethernet
-interface-name=$NIC
-
-[ethernet]
-
-[ipv4]
-address1={{ vm_ip }}/24,192.168.1.1
-dns=8.8.8.8;
-method=manual
-
-[ipv6]
-method=disabled
-EOF
-    chmod 600 /etc/NetworkManager/system-connections/$NIC.nmconnection
-else
-    # RHEL 8 - use ifcfg file
-    cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$NIC
-TYPE=Ethernet
-BOOTPROTO=none
-NAME=$NIC
-DEVICE=$NIC
-ONBOOT=yes
-IPADDR={{ vm_ip }}
-NETMASK=255.255.255.0
-GATEWAY=192.168.1.1
-DNS1=8.8.8.8
-EOF
-fi
-
+%post --log=/root/ks-post.log
+# 1. Setup Sudoers
 echo "sys_admin ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/sys_admin
 chmod 0440 /etc/sudoers.d/sys_admin
-# Enable and start sshd
-systemctl enable sshd
-systemctl enable httpd
 
-# Force reboot
-sync
-echo "Kickstart complete, forcing reboot..." >> /root/ks-post.log
-/sbin/reboot -f
+# 2. Prepare SSH Directory
+mkdir -p /home/sys_admin/.ssh
+chmod 700 /home/sys_admin/.ssh
+
+# 3. Optional: Inject your Public Key here if you have it handy
+# echo "ssh-rsa YOUR_PUB_KEY_HERE" > /home/sys_admin/.ssh/authorized_keys
+# chmod 600 /home/sys_admin/.ssh/authorized_keys
+
+# 4. Fix permissions
+chown -R sys_admin:sys_admin /home/sys_admin/.ssh
+
+# 5. Enable services
+systemctl enable sshd
+systemctl enable qemu-guest-agent
+
+# NOTE: Do NOT put a reboot command here. 
+# The 'reboot --eject' at the top handles this gracefully.
 %end

@@ -1,0 +1,11 @@
+<network>
+  <name>rhcsa_lab_net</name>
+  <bridge name='virbr1' stp='on' delay='0'/>
+  <domain name='rhcsa.lab'/>
+  
+  <ip address='192.168.55.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.55.100' end='192.168.55.254'/>
+    </dhcp>
+  </ip>
+</network>

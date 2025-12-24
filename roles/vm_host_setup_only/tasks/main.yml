@@ -1,0 +1,49 @@
+---
+# 1. Install Virtualization Packages
+- name: Install Virtualization Group
+  ansible.builtin.dnf:
+    name: "@Virtualization Host"
+    state: present
+
+- name: Install Python Libvirt bindings (Required for Ansible)
+  ansible.builtin.dnf:
+    name: python3-libvirt
+    state: present
+
+- name: Ensure Libvirtd is running
+  ansible.builtin.service:
+    name: libvirtd
+    state: started
+    enabled: yes
+
+# 2. Network Configuration
+- name: Define RHCSA Private Network
+  community.libvirt.virt_net:
+    command: define
+    name: rhcsa_lab_net
+    xml: "{{ lookup('template', 'rhcsa_net.xml.j2') }}"
+
+- name: Set RHCSA Network to Autostart
+  community.libvirt.virt_net:
+    autostart: yes
+    name: rhcsa_lab_net
+
+- name: Start RHCSA Network
+  community.libvirt.virt_net:
+    state: active
+    name: rhcsa_lab_net
+
+- name: Ensure 'default' network is active (For Repo VM Internet Access)
+  community.libvirt.virt_net:
+    state: active
+    name: default
+
+# 3. Firewall Configuration (For VNC Access)
+# Your instructions say you will connect to Host_IP:5900, 5901, 5902.
+# We must allow these ports on the HOST firewall.
+- name: Open VNC Ports for Lab Access
+  ansible.posix.firewalld:
+    port: 5900-5905/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
